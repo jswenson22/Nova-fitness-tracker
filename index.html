@@ -318,7 +318,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   letter-spacing:1px;cursor:pointer;border:none;transition:all 0.2s;line-height:1.4;text-align:center;}
 .save-opt-btn:active{transform:scale(0.96);}
 .btn-session{background:rgba(167,139,250,0.15);border:1px solid var(--accent);color:var(--accent);}
-.btn-permanent{background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;box-shadow:0 4px 20px rgba(139,92,246,0.4);}
 .btn-cancel-add{width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;
   padding:13px;color:var(--muted);font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;}
 
@@ -1218,10 +1217,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <div><label class="add-ex-num-label">REPS</label><input type="number" id="add-ex-reps" class="add-ex-num-input" value="10" min="1"></div>
       <div><label class="add-ex-num-label">WEIGHT</label><input type="number" id="add-ex-weight" class="add-ex-num-input" placeholder="0" min="0"></div>
     </div>
-    <div class="save-options">
-      <button class="save-opt-btn btn-session" onclick="addExercise(false)">THIS SESSION<br><span style="font-size:8px;opacity:0.7;">Won't save</span></button>
-      <button class="save-opt-btn btn-permanent" onclick="addExercise(true)">SAVE FOREVER<br><span style="font-size:8px;opacity:0.8;">Added to workout</span></button>
-    </div>
+    <button class="save-opt-btn btn-session" style="width:100%;" onclick="addExercise()">ADD EXERCISE</button>
     <button class="btn-cancel-add" onclick="closeAddEx()">CANCEL</button>
   </div>
 </div>
@@ -2135,15 +2131,19 @@ function closeAddEx(){
   sheet.style.transition='transform 0.35s cubic-bezier(0.32,0.72,0,1)';sheet.style.transform='translateY(100%)';
   setTimeout(()=>{overlay.classList.remove('active');sheet.style.transform='';sheet.style.transition='';},360);
 }
-function addExercise(permanent){
+function addExercise(){
   const name=document.getElementById('add-ex-name').value.trim();if(!name){document.getElementById('add-ex-name').focus();return;}
   const sets=parseInt(document.getElementById('add-ex-sets').value)||3;const reps=parseInt(document.getElementById('add-ex-reps').value)||10;const weight=parseFloat(document.getElementById('add-ex-weight').value)||0;
   const id='custom_'+Date.now();const ex={id,swaps:[name],sets,reps,priority:99,custom:true};
-  if(permanent){const saved=JSON.parse(localStorage.getItem('nova_custom_'+currentKey)||'[]');saved.push(ex);localStorage.setItem('nova_custom_'+currentKey,JSON.stringify(saved));WORKOUTS[currentKey].exercises.push(ex);}
   sessionExercises[currentKey]=sessionExercises[currentKey]||[];sessionExercises[currentKey].push(ex);
   setsDone[id]=Array(sets).fill(false);swapIdx[id]=0;
   if(weight)localStorage.setItem(`nova_ghost_${currentKey}_${id}_w`,weight);
-  closeAddEx();renderExercises(currentKey);updateProgress();
+  closeAddEx();
+  const list=document.getElementById('exercise-list');
+  const addBtn=list.querySelector('.add-ex-btn');
+  const newCard=buildSwipeCard(currentKey,ex,true);
+  list.insertBefore(newCard,addBtn);
+  updateProgress();
 }
 function deleteExercise(key,exId,isCustom,wrapperEl){
   if(sessionExercises[key])sessionExercises[key]=sessionExercises[key].filter(e=>e.id!==exId);
