@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="NOVA"/>
+<link rel="apple-touch-icon" id="app-icon" href=""/>
+<script>
+(function(){
+  const c=document.createElement('canvas'); c.width=512; c.height=512;
+  const ctx=c.getContext('2d');
+  const bg=ctx.createLinearGradient(0,0,512,512); bg.addColorStop(0,'#0a0520'); bg.addColorStop(1,'#04040f');
+  ctx.fillStyle=bg; ctx.roundRect(0,0,512,512,100); ctx.fill();
+  const g1=ctx.createRadialGradient(150,130,0,150,130,260); g1.addColorStop(0,'rgba(99,60,180,0.45)'); g1.addColorStop(1,'transparent');
+  ctx.fillStyle=g1; ctx.fillRect(0,0,512,512);
+  [[60,80,2],[420,60,1.5],[480,200,1],[80,400,1.5],[460,420,2],[200,30,1],[350,480,1.5],[30,250,1]].forEach(([x,y,r])=>{
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle='rgba(200,180,255,0.9)'; ctx.fill();
+  });
+  ctx.strokeStyle='#a78bfa'; ctx.lineWidth=34; ctx.lineCap='round'; ctx.shadowColor='#a78bfa'; ctx.shadowBlur=24;
+  ctx.beginPath(); ctx.moveTo(156,256); ctx.lineTo(356,256); ctx.stroke();
+  ctx.lineWidth=52; ctx.beginPath(); ctx.moveTo(130,210); ctx.lineTo(130,302); ctx.stroke();
+  ctx.lineWidth=44; ctx.beginPath(); ctx.moveTo(100,220); ctx.lineTo(100,292); ctx.stroke();
+  ctx.lineWidth=52; ctx.beginPath(); ctx.moveTo(382,210); ctx.lineTo(382,302); ctx.stroke();
+  ctx.lineWidth=44; ctx.beginPath(); ctx.moveTo(412,220); ctx.lineTo(412,292); ctx.stroke();
+  ctx.shadowBlur=0; ctx.font='bold 62px "Arial Narrow",Arial,sans-serif'; ctx.textAlign='center';
+  const gr=ctx.createLinearGradient(156,0,356,0); gr.addColorStop(0,'#a78bfa'); gr.addColorStop(1,'#38bdf8');
+  ctx.fillStyle=gr; ctx.fillText('NOVA',256,430);
+  document.getElementById('app-icon').href=c.toDataURL('image/png');
+})();
+</script>
+<title>NOVA — Workout Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#04040f; --bg2:#080818;
+  --surface:rgba(255,255,255,0.04); --surface2:rgba(255,255,255,0.08);
+  --border:rgba(138,100,255,0.2); --border2:rgba(138,100,255,0.4);
+  --accent:#a78bfa; --accent2:#38bdf8; --accent3:#f472b6;
+  --gold:#fbbf24; --green:#34d399; --red:#f87171;
+  --text:#e2e8f0; --muted:#64748b; --dim:rgba(255,255,255,0.1);
+  --glow:rgba(167,139,250,0.3);
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --tab-h:64px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+input,select,textarea{font-size:16px !important;touch-action:manipulation;}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;font-size:15px;}
+#stars-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(99,60,180,0.15) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%,rgba(30,100,200,0.1) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 60% at 60% 30%,rgba(200,60,120,0.06) 0%,transparent 50%);}
+
+/* ── SHELL ── */
+#app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;overflow:hidden;}
+header{display:flex;align-items:center;justify-content:space-between;
+  padding:calc(12px + var(--safe-top)) 16px 12px;border-bottom:1px solid var(--border);
+  background:rgba(4,4,15,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  flex-shrink:0;z-index:50;}
+.logo{font-family:'Orbitron',monospace;font-weight:900;font-size:20px;letter-spacing:4px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;line-height:1;}
+.logo-sub{font-family:'Exo 2',sans-serif;font-size:8px;letter-spacing:3px;color:var(--muted);
+  -webkit-text-fill-color:var(--muted);margin-top:2px;}
+#header-timer{font-family:'Orbitron',monospace;font-size:15px;font-weight:600;color:var(--accent);
+  display:none;text-shadow:0 0 12px var(--glow);letter-spacing:2px;align-items:center;}
+
+/* ... SNIPPED ... (see full file above) ... */
+</style>
+</head>
+<body>
+<canvas id="stars-canvas"></canvas>
+<!-- ... SNIPPED ... --></body>
+</html>
