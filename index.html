@@ -216,7 +216,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .data-btn:active{background:rgba(56,189,248,0.18);}
 .data-collapsible-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none;}
 .data-collapsible-header .settings-label{margin-bottom:0;}
-.data-collapsible-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s;display:inline-block;}
+.data-collapsible-arrow{color:var(--muted);transition:transform 0.25s;display:inline-flex;align-items:center;}
 .data-collapsible-arrow.open{transform:rotate(90deg);}
 .data-collapsible-body{flex-direction:column;gap:8px;margin-top:10px;}
 .data-collapsible-body.open{display:flex;}
@@ -586,6 +586,74 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   font-weight:900;letter-spacing:3px;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);}
 .builder-save-btn:active{transform:scale(0.98);}
 
+/* ── EDIT LOG MODAL ── */
+.edit-log-overlay{display:none;position:fixed;inset:0;z-index:400;
+  background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.edit-log-overlay.active{display:flex;flex-direction:column;}
+.edit-log-sheet{background:var(--bg2);border-radius:20px 20px 0 0;border-top:1px solid var(--border);
+  display:flex;flex-direction:column;max-height:92vh;width:100%;margin-top:auto;
+  transform:translateY(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);}
+.edit-log-sheet.open{transform:translateY(0);}
+.edit-log-header{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 16px 0;flex-shrink:0;}
+.edit-log-handle{width:36px;height:4px;background:var(--dim);border-radius:2px;margin:14px auto 0;}
+.edit-log-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;
+  letter-spacing:3px;color:var(--text);}
+.edit-log-close{width:32px;height:32px;border-radius:50%;background:var(--surface);
+  border:1px solid var(--border);color:var(--muted);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.edit-log-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;-ms-overflow-style:none;}
+.edit-log-body::-webkit-scrollbar{display:none;}
+.edit-log-section-label{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;
+  color:var(--muted);margin-bottom:8px;margin-top:16px;}
+.edit-log-section-label:first-child{margin-top:0;}
+.edit-log-field{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:11px 14px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:15px;
+  outline:none;width:100%;margin-bottom:10px;}
+.edit-log-field:focus{border-color:var(--accent);}
+.edit-log-ex-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px;margin-bottom:10px;}
+.edit-log-ex-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.edit-log-ex-name{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:8px 10px;color:var(--text);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  outline:none;letter-spacing:1px;}
+.edit-log-ex-name:focus{border-color:var(--accent);}
+.edit-log-ex-del{width:30px;height:30px;border-radius:8px;background:rgba(248,113,113,0.1);
+  border:1px solid rgba(248,113,113,0.3);color:#f87171;font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.edit-log-sets-label{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;
+  color:var(--muted);margin-bottom:6px;}
+.edit-log-set-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.edit-log-set-num{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  color:var(--muted);width:28px;flex-shrink:0;text-align:center;}
+.edit-log-set-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;color:var(--text);font-family:'Orbitron',monospace;font-size:12px;font-weight:700;
+  text-align:center;outline:none;-webkit-appearance:none;min-width:0;}
+.edit-log-set-input:focus{border-color:var(--accent);}
+.edit-log-set-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-align:center;
+  margin-top:2px;font-family:'Orbitron',monospace;}
+.edit-log-set-del{width:26px;height:26px;border-radius:6px;background:transparent;
+  border:none;color:var(--muted);font-size:14px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;}
+.edit-log-set-del:active{color:#f87171;}
+.edit-log-add-set{width:100%;padding:8px;background:rgba(56,189,248,0.06);
+  border:1.5px dashed rgba(56,189,248,0.25);border-radius:10px;color:var(--accent2);
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;
+  cursor:pointer;margin-top:4px;}
+.edit-log-add-ex{width:100%;padding:13px;background:rgba(167,139,250,0.06);
+  border:1.5px dashed rgba(167,139,250,0.3);border-radius:12px;color:var(--accent);
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;
+  cursor:pointer;margin-bottom:16px;}
+.edit-log-save{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),#7c3aed);
+  border:none;border-radius:14px;color:#fff;font-family:'Orbitron',monospace;font-size:13px;
+  font-weight:900;letter-spacing:3px;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,0.4);
+  margin-bottom:8px;}
+.edit-log-save:active{transform:scale(0.98);}
+.edit-log-cancel{width:100%;padding:13px;background:transparent;border:1px solid var(--border);
+  border-radius:14px;color:var(--muted);font-family:'Orbitron',monospace;font-size:11px;
+  font-weight:700;letter-spacing:2px;cursor:pointer;}
+
 .builder-split-section{margin-bottom:10px;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
 .builder-split-header{display:flex;align-items:center;justify-content:space-between;
   padding:14px 16px;background:var(--surface);cursor:pointer;
@@ -853,8 +921,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       </div>
       <div class="settings-section">
         <div class="data-collapsible-header" onclick="toggleDataSection()">
-          <div class="settings-label">Data &amp; Backups</div>
-          <span class="data-collapsible-arrow" id="data-arrow">&rsaquo;</span>
+          <div class="settings-label">Data &amp; Backups <span class="data-collapsible-arrow" id="data-arrow"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="2,1 9,5 2,9"/></svg></span></div>
         </div>
         <div class="data-collapsible-body closed" id="data-collapsible-body">
           <button class="data-btn" onclick="exportCSV()">📤 EXPORT WORKOUT LOG (.xlsx)</button>
@@ -1229,6 +1296,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="move-date-grid" id="move-date-grid"></div>
     <button class="move-date-cancel" onclick="closeMoveDate()">CANCEL</button>
+  </div>
+</div>
+
+<!-- ══ EDIT WORKOUT LOG MODAL ══ -->
+<div class="edit-log-overlay" id="edit-log-overlay">
+  <div class="edit-log-sheet" id="edit-log-sheet">
+    <div class="edit-log-handle"></div>
+    <div class="edit-log-header">
+      <div class="edit-log-title">✏️ EDIT WORKOUT</div>
+      <button class="edit-log-close" onclick="closeEditLog()">✕</button>
+    </div>
+    <div class="edit-log-body" id="edit-log-body">
+      <!-- dynamically rendered -->
+    </div>
   </div>
 </div>
 
@@ -1682,6 +1763,7 @@ function showDayLog(dateStr,logs){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div class="day-log-name" style="margin-bottom:0">${log.workout}</div>
         <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="openEditLog('${dateStr}',${i})" title="Edit workout" style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:8px;padding:4px 8px;color:var(--accent);font-size:11px;cursor:pointer;line-height:1;">✏️</button>
           <button onclick="promptChangeLogDate('${dateStr}',${i})" title="Change date" style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:8px;padding:4px 8px;color:var(--muted);font-size:11px;cursor:pointer;line-height:1;">📅</button>
           <button onclick="deleteWorkoutLog('${dateStr}',${i},'${(log.workout||'').replace(/'/g,String.fromCharCode(92)+"'")}')" style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.35);border-radius:8px;padding:4px 10px;color:#f87171;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1px;cursor:pointer;">🗑</button>
         </div>
@@ -1691,7 +1773,7 @@ function showDayLog(dateStr,logs){
       <div class="day-log-stat">Total Volume <span>${(log.volume||0).toLocaleString()} lbs</span></div>
       <div class="day-log-stat">Sets Completed <span>${log.setsCompleted||0}</span></div>
       <div class="day-log-stat">Exercises <span>${log.exerciseCount||0}</span></div>
-      ${(log.exercises||[]).map(e=>`<div class="day-log-stat">${e.name} <span>${e.weight?e.weight+'lbs × '+e.reps+'reps':'—'}</span></div>`).join('')}
+      ${(log.exercises||[]).map(e=>`<div class="day-log-stat">${e.name} <span>${e.weight?e.weight+'lbs × '+e.reps+'reps × '+(e.sets||0)+'sets':e.reps+'reps × '+(e.sets||0)+'sets'}</span></div>`).join('')}
     </div>`).join('');
   document.getElementById('day-log-name').textContent='';
   document.getElementById('day-log-stats').innerHTML=weightLine+html;
@@ -2182,6 +2264,7 @@ function addExercise(){
   const addBtn=list.querySelector('.add-ex-btn');
   const newCard=buildSwipeCard(currentKey,ex,true);
   list.insertBefore(newCard,addBtn);
+  if(weight){const wInp=document.getElementById(`inp-w-${id}`);if(wInp)wInp.value=weight;}
   updateProgress();
 }
 function deleteExercise(key,exId,isCustom,wrapperEl){
@@ -2711,6 +2794,196 @@ function toggleDataSection(){
   body.classList.toggle('open',!isOpen);
   body.classList.toggle('closed',isOpen);
   if(arrow)arrow.classList.toggle('open',!isOpen);
+}
+
+// ── EDIT WORKOUT LOG ──
+let _editLogDs=null,_editLogIdx=null;
+let _editLogExercises=[]; // [{name, sets:[{weight,reps}]}]
+
+function openEditLog(ds,idx){
+  _editLogDs=ds;_editLogIdx=idx;
+  const logs=getWorkoutLogs(ds);
+  const log=logs[idx];
+  if(!log)return;
+  // Deep clone exercises into editable format
+  _editLogExercises=(log.exercises||[]).map(ex=>{
+    const setsArr=[];
+    const count=ex.sets||1;
+    for(let i=0;i<count;i++){
+      setsArr.push({weight:ex.weight||'',reps:ex.reps||0});
+    }
+    return{name:ex.name||'',sets:setsArr};
+  });
+  renderEditLogBody(log);
+  const overlay=document.getElementById('edit-log-overlay');
+  const sheet=document.getElementById('edit-log-sheet');
+  overlay.classList.add('active');
+  setTimeout(()=>sheet.classList.add('open'),10);
+}
+
+function closeEditLog(){
+  const sheet=document.getElementById('edit-log-sheet');
+  const overlay=document.getElementById('edit-log-overlay');
+  sheet.classList.remove('open');
+  setTimeout(()=>overlay.classList.remove('active'),380);
+  _editLogDs=null;_editLogIdx=null;_editLogExercises=[];
+}
+
+function renderEditLogBody(log){
+  const body=document.getElementById('edit-log-body');
+  body.innerHTML='';
+
+  // Workout name
+  const nameLabel=document.createElement('div');nameLabel.className='edit-log-section-label';nameLabel.textContent='WORKOUT NAME';body.appendChild(nameLabel);
+  const nameInput=document.createElement('input');nameInput.className='edit-log-field';nameInput.id='edit-log-name';nameInput.value=log.workout||'';nameInput.placeholder='Workout name...';body.appendChild(nameInput);
+
+  // Duration
+  const durLabel=document.createElement('div');durLabel.className='edit-log-section-label';durLabel.textContent='DURATION';body.appendChild(durLabel);
+  const durInput=document.createElement('input');durInput.className='edit-log-field';durInput.id='edit-log-duration';durInput.value=log.duration||'';durInput.placeholder='e.g. 45m 30s';body.appendChild(durInput);
+
+  // Exercises
+  const exLabel=document.createElement('div');exLabel.className='edit-log-section-label';exLabel.textContent='EXERCISES';body.appendChild(exLabel);
+
+  const exContainer=document.createElement('div');exContainer.id='edit-log-ex-container';body.appendChild(exContainer);
+  _editLogExercises.forEach((_,i)=>renderEditLogExCard(i,exContainer));
+
+  // Add exercise button
+  const addEx=document.createElement('button');addEx.className='edit-log-add-ex';addEx.textContent='+ ADD EXERCISE';
+  addEx.onclick=()=>{_editLogExercises.push({name:'',sets:[{weight:'',reps:0}]});renderEditLogExCard(_editLogExercises.length-1,exContainer);};
+  body.appendChild(addEx);
+
+  // Save / Cancel
+  const saveBtn=document.createElement('button');saveBtn.className='edit-log-save';saveBtn.textContent='SAVE CHANGES';saveBtn.onclick=saveEditLog;body.appendChild(saveBtn);
+  const cancelBtn=document.createElement('button');cancelBtn.className='edit-log-cancel';cancelBtn.textContent='CANCEL';cancelBtn.onclick=closeEditLog;body.appendChild(cancelBtn);
+}
+
+function renderEditLogExCard(exIdx,container){
+  const existing=document.getElementById(`edit-ex-card-${exIdx}`);
+  if(existing)existing.remove();
+
+  const ex=_editLogExercises[exIdx];
+  const card=document.createElement('div');card.className='edit-log-ex-card';card.id=`edit-ex-card-${exIdx}`;
+
+  // Header row: name + delete
+  const header=document.createElement('div');header.className='edit-log-ex-header';
+  const nameIn=document.createElement('input');nameIn.className='edit-log-ex-name';nameIn.placeholder='Exercise name...';nameIn.value=ex.name;
+  nameIn.oninput=e=>_editLogExercises[exIdx].name=e.target.value;
+  const delBtn=document.createElement('button');delBtn.className='edit-log-ex-del';delBtn.innerHTML='✕';
+  delBtn.onclick=()=>{
+    _editLogExercises.splice(exIdx,1);
+    // Re-render all ex cards
+    const con=document.getElementById('edit-log-ex-container');con.innerHTML='';
+    _editLogExercises.forEach((_,i)=>renderEditLogExCard(i,con));
+  };
+  header.appendChild(nameIn);header.appendChild(delBtn);card.appendChild(header);
+
+  // Sets label
+  const setsLabel=document.createElement('div');setsLabel.className='edit-log-sets-label';setsLabel.textContent='// SETS';card.appendChild(setsLabel);
+
+  // Set rows container
+  const setsContainer=document.createElement('div');setsContainer.id=`edit-sets-${exIdx}`;card.appendChild(setsContainer);
+  ex.sets.forEach((_,si)=>renderEditLogSetRow(exIdx,si,setsContainer));
+
+  // Add set button
+  const addSetBtn=document.createElement('button');addSetBtn.className='edit-log-add-set';addSetBtn.textContent='+ ADD SET';
+  addSetBtn.onclick=()=>{
+    _editLogExercises[exIdx].sets.push({weight:_editLogExercises[exIdx].sets.slice(-1)[0]?.weight||'',reps:_editLogExercises[exIdx].sets.slice(-1)[0]?.reps||0});
+    const sc=document.getElementById(`edit-sets-${exIdx}`);
+    renderEditLogSetRow(exIdx,_editLogExercises[exIdx].sets.length-1,sc);
+  };
+  card.appendChild(addSetBtn);
+
+  // Insert before the add-ex button (last child of container before it was cleared) — just append
+  container.appendChild(card);
+}
+
+function renderEditLogSetRow(exIdx,setIdx,container){
+  const setData=_editLogExercises[exIdx].sets[setIdx];
+  const row=document.createElement('div');row.className='edit-log-set-row';row.id=`edit-set-row-${exIdx}-${setIdx}`;
+
+  // Set number label
+  const numDiv=document.createElement('div');numDiv.className='edit-log-set-num';numDiv.textContent='S'+(setIdx+1);
+
+  // Weight input group
+  const wGroup=document.createElement('div');wGroup.style.flex='1';wGroup.style.display='flex';wGroup.style.flexDirection='column';
+  const wInput=document.createElement('input');wInput.className='edit-log-set-input';wInput.type='number';wInput.inputMode='decimal';wInput.placeholder='lbs';wInput.min='0';wInput.value=setData.weight||'';
+  wInput.oninput=e=>_editLogExercises[exIdx].sets[setIdx].weight=e.target.value;
+  const wLabel=document.createElement('div');wLabel.className='edit-log-set-label';wLabel.textContent='LBS';
+  wGroup.appendChild(wInput);wGroup.appendChild(wLabel);
+
+  // Reps input group
+  const rGroup=document.createElement('div');rGroup.style.flex='1';rGroup.style.display='flex';rGroup.style.flexDirection='column';
+  const rInput=document.createElement('input');rInput.className='edit-log-set-input';rInput.type='number';rInput.inputMode='numeric';rInput.placeholder='reps';rInput.min='0';rInput.value=setData.reps||'';
+  rInput.oninput=e=>_editLogExercises[exIdx].sets[setIdx].reps=parseInt(e.target.value)||0;
+  const rLabel=document.createElement('div');rLabel.className='edit-log-set-label';rLabel.textContent='REPS';
+  rGroup.appendChild(rInput);rGroup.appendChild(rLabel);
+
+  // Delete set button
+  const delSet=document.createElement('button');delSet.className='edit-log-set-del';delSet.innerHTML='✕';
+  delSet.onclick=()=>{
+    if(_editLogExercises[exIdx].sets.length<=1)return;
+    _editLogExercises[exIdx].sets.splice(setIdx,1);
+    const sc=document.getElementById(`edit-sets-${exIdx}`);
+    sc.innerHTML='';
+    _editLogExercises[exIdx].sets.forEach((_,si)=>renderEditLogSetRow(exIdx,si,sc));
+  };
+
+  row.appendChild(numDiv);row.appendChild(wGroup);row.appendChild(rGroup);row.appendChild(delSet);
+  container.appendChild(row);
+}
+
+function saveEditLog(){
+  if(!_editLogDs&&_editLogDs!==0)return;
+  const logs=getWorkoutLogs(_editLogDs);
+  const log=logs[_editLogIdx];
+  if(!log)return;
+
+  // Read name + duration
+  log.workout=document.getElementById('edit-log-name').value.trim()||log.workout;
+  log.duration=document.getElementById('edit-log-duration').value.trim()||log.duration;
+
+  // Rebuild exercises from _editLogExercises
+  const newExercises=_editLogExercises.filter(ex=>ex.name.trim()).map(ex=>{
+    const sets=ex.sets.length;
+    // Use last set's weight/reps as the "representative" values for summary
+    // but store per-set data too for richer info
+    const weights=ex.sets.map(s=>parseFloat(s.weight)||0);
+    const repsList=ex.sets.map(s=>parseInt(s.reps)||0);
+    const avgWeight=weights.reduce((a,b)=>a+b,0)/sets||0;
+    const avgReps=Math.round(repsList.reduce((a,b)=>a+b,0)/sets)||0;
+    return{
+      name:ex.name.trim(),
+      weight:avgWeight||null,
+      reps:avgReps,
+      sets,
+      setData:ex.sets.map(s=>({weight:parseFloat(s.weight)||null,reps:parseInt(s.reps)||0}))
+    };
+  });
+
+  // Recalculate volume and totals
+  let totalVol=0,totalSets=0;
+  newExercises.forEach(ex=>{
+    if(ex.setData){
+      ex.setData.forEach(s=>{totalVol+=(s.weight||0)*(s.reps||0);});
+    }else{
+      totalVol+=(ex.weight||0)*(ex.reps||0)*(ex.sets||0);
+    }
+    totalSets+=ex.sets;
+  });
+
+  log.exercises=newExercises;
+  log.exerciseCount=newExercises.length;
+  log.setsCompleted=totalSets;
+  log.volume=totalVol;
+  logs[_editLogIdx]=log;
+  localStorage.setItem('nova_log_'+_editLogDs,JSON.stringify(logs));
+
+  closeEditLog();
+  // Re-render calendar + reopen day log with fresh data
+  renderCalendar();renderProgressStats();renderWeeklyRing();updateHomeStats();
+  const updatedLogs=getWorkoutLogs(_editLogDs);
+  showDayLog(_editLogDs,updatedLogs);
+  haptic('success');
 }
 
 // ── IMPORT WORKOUT LOG ──
