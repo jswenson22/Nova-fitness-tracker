@@ -2959,12 +2959,14 @@ function buildDurationPicker(currentStr){
 
     // Touch
     col.addEventListener('touchstart',e=>{
+      e.preventDefault();
       const t=e.touches[0];startY=t.clientY;vel=0;lastY=t.clientY;lastT=Date.now();
       const cur=new DOMMatrix(getComputedStyle(inner).transform);startOffset=cur.m42;
       inner.style.transition='none';isDragging=true;
-    },{passive:true});
+    },{passive:false});
 
     col.addEventListener('touchmove',e=>{
+      e.preventDefault();
       if(!isDragging)return;
       const t=e.touches[0];const dy=t.clientY-startY;
       const now=Date.now();vel=(t.clientY-lastY)/(now-lastT||1)*16;lastY=t.clientY;lastT=now;
@@ -2972,7 +2974,7 @@ function buildDurationPicker(currentStr){
       offset=Math.max(getOffset(max),Math.min(getOffset(0),offset));
       inner.style.transform=`translateY(${offset}px)`;
       updateHighlight(clamp(Math.round(-offset/ITEM_H)));
-    },{passive:true});
+    },{passive:false});
 
     col.addEventListener('touchend',()=>{
       if(!isDragging)return;isDragging=false;
