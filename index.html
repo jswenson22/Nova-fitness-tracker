@@ -362,6 +362,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:#fff;cursor:pointer;
   box-shadow:0 4px 20px rgba(248,113,113,0.4);}
 
+/* ── MOVE DATE CALENDAR MODAL ── */
+.move-date-modal{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.8);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;}
+.move-date-modal.active{display:flex;}
+.move-date-box{background:#0d0d22;border:1px solid rgba(138,100,255,0.45);border-radius:24px;
+  padding:24px 20px 20px;max-width:340px;width:100%;}
+.move-date-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:4px;color:var(--muted);
+  text-align:center;margin-bottom:18px;}
+.move-date-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.move-date-month{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--text);}
+.move-date-nav-btn{width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid var(--border);
+  color:var(--accent);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;
+  flex-shrink:0;}
+.move-date-nav-btn:active{background:rgba(167,139,250,0.15);}
+.move-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px;}
+.move-date-day-hdr{text-align:center;font-size:9px;color:var(--muted);letter-spacing:1px;padding:4px 0;
+  font-family:'Orbitron',monospace;}
+.move-date-day{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);transition:all 0.15s;border:1.5px solid transparent;}
+.move-date-day:empty{pointer-events:none;}
+.move-date-day.other-month{opacity:0.25;pointer-events:none;}
+.move-date-day.future{opacity:0.2;pointer-events:none;cursor:default;}
+.move-date-day.has-workout{background:rgba(167,139,250,0.15);border-color:rgba(167,139,250,0.5);color:var(--accent);}
+.move-date-day.origin{background:rgba(56,189,248,0.18);border-color:var(--accent2);color:var(--accent2);font-weight:700;}
+.move-date-day.today-marker{border-color:rgba(167,139,250,0.4);}
+.move-date-day:not(.future):not(.other-month):hover,.move-date-day:not(.future):not(.other-month):active{
+  background:rgba(167,139,250,0.22);border-color:var(--accent);color:var(--accent);transform:scale(0.93);}
+.move-date-cancel{width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;
+  padding:12px;color:var(--muted);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;
+  letter-spacing:2px;cursor:pointer;}
+.move-date-cancel:active{border-color:var(--accent);color:var(--accent);}
+
 /* ── WEEKLY GOAL TRACKER ── */
 .weekly-tracker{display:flex;gap:8px;margin-top:12px;justify-content:center;}
 .weekly-dot{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);
@@ -411,6 +443,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .weight-entry-val{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--accent);}
 .weight-entry-date{color:var(--muted);font-size:11px;}
 .weight-entry-del{color:var(--muted);font-size:14px;cursor:pointer;padding:2px 6px;}
+.weight-entry-actions{display:flex;align-items:center;gap:2px;}
+.weight-entry-btn{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:3px 5px;line-height:1;border-radius:6px;transition:color 0.15s;}
+.weight-entry-btn:active{color:var(--accent);}
+.weight-entry-edit-row{display:flex;align-items:center;gap:6px;margin-top:5px;}
+.weight-edit-input{background:rgba(255,255,255,0.06);border:1px solid var(--border2);border-radius:8px;
+  padding:4px 8px;color:var(--text);font-family:'Orbitron',monospace;font-size:14px;font-weight:700;
+  width:80px;outline:none;text-align:center;-webkit-appearance:none;}
+.weight-edit-input:focus{border-color:var(--accent);}
+.weight-edit-confirm{background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);border-radius:7px;
+  padding:4px 9px;color:var(--green);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;cursor:pointer;}
+.weight-edit-cancel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:7px;
+  padding:4px 9px;color:var(--muted);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;cursor:pointer;}
 .weight-delta{font-size:10px;font-family:'Orbitron',monospace;}
 .weight-delta.up{color:var(--red);}
 .weight-delta.down{color:var(--green);}
@@ -808,6 +852,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div class="workout-screen-title" id="ws-title">LEG DAY</div>
         <button class="btn-danger" id="btn-finish" onclick="finishWorkout()">■ FINISH</button>
       </div>
+      <!-- Workout date selector -->
+      <div style="margin-bottom:10px;">
+        <button onclick="openWorkoutDateModal()" style="width:100%;padding:9px 14px;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:12px;color:var(--accent);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+          <span>📅 WORKOUT DATE</span>
+          <span id="ws-date-label" style="color:var(--accent2);font-size:9px;letter-spacing:1px;">TODAY</span>
+        </button>
+      </div>
       <!-- Variant switcher — only shown when split has multiple variants -->
       <div id="ws-variant-bar" style="display:none;margin-bottom:10px;">
         <button onclick="openVariantPicker()" style="width:100%;padding:9px 14px;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:12px;color:var(--accent);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
@@ -857,6 +908,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
             <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
+        <button class="btn-full-outline" onclick="resumeWorkout()" style="margin-bottom:8px;">↩ BACK TO WORKOUT</button>
         <button class="btn-full-outline" onclick="confirmDeleteWorkout()" style="color:var(--red);border-color:rgba(248,113,113,0.3);">🗑 DELETE WORKOUT</button>
       </div>
     </div>
@@ -1044,6 +1096,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   <div id="variant-picker-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
 </div>
 
+<!-- ══ WORKOUT DATE PICKER ══ -->
+<div class="picker-overlay" id="wdate-picker-overlay" onclick="closeWorkoutDateModal()"></div>
+<div class="picker-sheet" id="wdate-picker-sheet">
+  <div class="picker-handle"></div>
+  <div class="picker-title">// SELECT WORKOUT DATE</div>
+  <div class="cal-month-nav" style="margin-bottom:14px;">
+    <button class="cal-nav-btn" onclick="shiftWdateCal(-1)">‹</button>
+    <div class="cal-month-label" id="wdate-cal-month"></div>
+    <button class="cal-nav-btn" id="wdate-cal-next" onclick="shiftWdateCal(1)">›</button>
+  </div>
+  <div class="cal-grid">
+    <div class="cal-day-header">SU</div><div class="cal-day-header">MO</div>
+    <div class="cal-day-header">TU</div><div class="cal-day-header">WE</div>
+    <div class="cal-day-header">TH</div><div class="cal-day-header">FR</div>
+    <div class="cal-day-header">SA</div>
+  </div>
+  <div class="cal-grid" id="wdate-cal-days" style="margin-bottom:16px;"></div>
+</div>
+
 <!-- ══ BUILDER DELETE CONFIRM ══ -->
 <div class="confirm-modal" id="builder-delete-modal">
   <div class="confirm-box">
@@ -1106,6 +1177,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <button class="confirm-stay" onclick="confirmBackNo()">STAY</button>
       <button class="confirm-leave" onclick="confirmBackYes()">LEAVE</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ MOVE DATE CALENDAR MODAL ══ -->
+<div class="move-date-modal" id="move-date-modal">
+  <div class="move-date-box">
+    <div class="move-date-title">MOVE WORKOUT TO...</div>
+    <div class="move-date-nav">
+      <div class="move-date-nav-btn" onclick="moveDateNavMonth(-1)">‹</div>
+      <div class="move-date-month" id="move-date-month-label"></div>
+      <div class="move-date-nav-btn" onclick="moveDateNavMonth(1)">›</div>
+    </div>
+    <div class="move-date-grid" id="move-date-grid"></div>
+    <button class="move-date-cancel" onclick="closeMoveDate()">CANCEL</button>
+  </div>
+</div>
+
+<!-- ══ WEIGHT MOVE DATE CALENDAR MODAL ══ -->
+<div class="move-date-modal" id="weight-move-date-modal">
+  <div class="move-date-box">
+    <div class="move-date-title">MOVE WEIGHT ENTRY TO...</div>
+    <div class="move-date-nav">
+      <div class="move-date-nav-btn" onclick="weightDateNavMonth(-1)">‹</div>
+      <div class="move-date-month" id="weight-move-date-month-label"></div>
+      <div class="move-date-nav-btn" onclick="weightDateNavMonth(1)">›</div>
+    </div>
+    <div class="move-date-grid" id="weight-move-date-grid"></div>
+    <button class="move-date-cancel" onclick="closeWeightMoveDate()">CANCEL</button>
   </div>
 </div>
 
@@ -1219,6 +1318,7 @@ function init(){
   addSwipeToDismiss('add-ex-sheet',closeAddEx);
   addSwipeToDismiss('variant-picker-sheet',closeVariantPicker);
   addSwipeToDismiss('pr-history-sheet',closePRHistory);
+  addSwipeToDismiss('wdate-picker-sheet',closeWorkoutDateModal);
   addSwipeToCloseBuilder();
 }
 
@@ -1546,8 +1646,12 @@ function showDayLog(dateStr,logs){
     <div style="${logs.length>1?'border-top:1px solid var(--border);padding-top:10px;margin-top:'+(i===0?'0':'10px'):''}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div class="day-log-name" style="margin-bottom:0">${log.workout}</div>
-        <button onclick="deleteWorkoutLog('${dateStr}',${i},'${(log.workout||'').replace(/'/g,String.fromCharCode(92)+"'")}')" style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.35);border-radius:8px;padding:4px 10px;color:#f87171;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1px;cursor:pointer;">🗑</button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="promptChangeLogDate('${dateStr}',${i})" title="Change date" style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:8px;padding:4px 8px;color:var(--muted);font-size:11px;cursor:pointer;line-height:1;">📅</button>
+          <button onclick="deleteWorkoutLog('${dateStr}',${i},'${(log.workout||'').replace(/'/g,String.fromCharCode(92)+"'")}')" style="background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.35);border-radius:8px;padding:4px 10px;color:#f87171;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1px;cursor:pointer;">🗑</button>
+        </div>
       </div>
+
       <div class="day-log-stat">Duration <span>${log.duration}</span></div>
       <div class="day-log-stat">Total Volume <span>${(log.volume||0).toLocaleString()} lbs</span></div>
       <div class="day-log-stat">Sets Completed <span>${log.setsCompleted||0}</span></div>
@@ -1568,6 +1672,70 @@ function _doDeleteWorkoutLog(ds,idx){
   if(idx!==undefined){logs.splice(idx,1);}else{logs.length=0;}
   if(logs.length===0){localStorage.removeItem('nova_log_'+ds);}
   else{localStorage.setItem('nova_log_'+ds,JSON.stringify(logs));}
+  document.getElementById('day-log').classList.remove('active');
+  renderCalendar();renderProgressStats();renderWeeklyRing();updateHomeStats();
+}
+// ── MOVE DATE CALENDAR MODAL ──
+let _moveDateFromDs=null,_moveDateIdx=null,_moveDateViewYear=null,_moveDateViewMonth=null;
+function promptChangeLogDate(ds,idx){
+  _moveDateFromDs=ds;_moveDateIdx=idx;
+  const parts=ds.split('-');
+  _moveDateViewYear=parseInt(parts[0]);_moveDateViewMonth=parseInt(parts[1])-1;
+  renderMoveDateCalendar();
+  document.getElementById('move-date-modal').classList.add('active');
+}
+function closeMoveDate(){
+  document.getElementById('move-date-modal').classList.remove('active');
+  _moveDateFromDs=null;_moveDateIdx=null;
+}
+function moveDateNavMonth(dir){
+  _moveDateViewMonth+=dir;
+  if(_moveDateViewMonth<0){_moveDateViewMonth=11;_moveDateViewYear--;}
+  else if(_moveDateViewMonth>11){_moveDateViewMonth=0;_moveDateViewYear++;}
+  renderMoveDateCalendar();
+}
+function renderMoveDateCalendar(){
+  const todayStr=new Date().toISOString().split('T')[0];
+  const today=new Date(); today.setHours(0,0,0,0);
+  const monthNames=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  document.getElementById('move-date-month-label').textContent=monthNames[_moveDateViewMonth]+' '+_moveDateViewYear;
+  const grid=document.getElementById('move-date-grid');
+  grid.innerHTML='';
+  ['S','M','T','W','T','F','S'].forEach(d=>{const h=document.createElement('div');h.className='move-date-day-hdr';h.textContent=d;grid.appendChild(h);});
+  const firstDay=new Date(_moveDateViewYear,_moveDateViewMonth,1).getDay();
+  const daysInMonth=new Date(_moveDateViewYear,_moveDateViewMonth+1,0).getDate();
+  for(let i=0;i<firstDay;i++){const blank=document.createElement('div');grid.appendChild(blank);}
+  for(let d=1;d<=daysInMonth;d++){
+    const cell=document.createElement('div');
+    cell.className='move-date-day';
+    cell.textContent=d;
+    const ds=_moveDateViewYear+'-'+String(_moveDateViewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const cellDate=new Date(_moveDateViewYear,_moveDateViewMonth,d);
+    if(cellDate>today){cell.classList.add('future');}
+    else{
+      if(ds===_moveDateFromDs){cell.classList.add('origin');}
+      else{
+        const logs=getWorkoutLogs(ds);
+        if(logs.length>0)cell.classList.add('has-workout');
+        if(ds===todayStr)cell.classList.add('today-marker');
+        cell.addEventListener('click',()=>{_doMoveLogDate(ds);});
+      }
+    }
+    grid.appendChild(cell);
+  }
+}
+function _doMoveLogDate(toDs){
+  const fromDs=_moveDateFromDs; const idx=_moveDateIdx;
+  closeMoveDate();
+  if(!fromDs||toDs===fromDs)return;
+  const logs=getWorkoutLogs(fromDs);
+  if(idx>=logs.length)return;
+  const entry=logs.splice(idx,1)[0];
+  if(logs.length===0)localStorage.removeItem('nova_log_'+fromDs);
+  else localStorage.setItem('nova_log_'+fromDs,JSON.stringify(logs));
+  const destLogs=getWorkoutLogs(toDs);
+  destLogs.push(entry);
+  localStorage.setItem('nova_log_'+toDs,JSON.stringify(destLogs));
   document.getElementById('day-log').classList.remove('active');
   renderCalendar();renderProgressStats();renderWeeklyRing();updateHomeStats();
 }
@@ -1597,6 +1765,10 @@ function openWorkout(key){
   haptic('heavy');
   closePicker();
   currentKey=key;swapIdx={};setsDone={};expanded={};
+  // Reset workout date to today
+  window._workoutDate=new Date().toISOString().split('T')[0];
+  const dl=document.getElementById('ws-date-label');
+  if(dl)dl.textContent='TODAY';
   if(!sessionExercises[key])sessionExercises[key]=[];
   else sessionExercises[key]=[];
   deletedIds=[];
@@ -1697,7 +1869,7 @@ function buildCard(key,ex){
       </div>
       <div class="inputs-row" style="grid-template-columns:1fr 1fr;">
         <div class="input-group"><label>WEIGHT (lbs)</label>
-          <input type="number" inputmode="decimal" id="inp-w-${ex.id}" placeholder="0" min="0" oninput="updateProgress()">
+          <input type="number" inputmode="decimal" id="inp-w-${ex.id}" placeholder="0" min="0" oninput="updateAllSetWeights('${ex.id}');updateProgress()">
           <div class="ghost-text">${ghostW?'📡 LAST: '+ghostW+' lbs':'No prev data'}</div></div>
         <div class="input-group"><label>GOAL REPS</label>
           <input type="number" inputmode="numeric" id="inp-r-${ex.id}" value="${getGoalReps(ex.reps)}" min="1" oninput="updateMeta('${ex.id}');updateProgress();updateAllSetReps('${ex.id}')">
@@ -1756,6 +1928,7 @@ function saveSetRep(exId,idx,val){if(!window._setReps)window._setReps={};if(!win
 function addSetRow(exId){const cur=setsDone[exId]||[];const goalReps=parseInt(document.getElementById(`inp-r-${exId}`)?.value)||8;setsDone[exId]=[...cur,false];renderSetRows(exId,cur.length+1,goalReps);updateMeta(exId);updateProgress();}
 function removeSetRow(exId,idx){const cur=setsDone[exId]||[];if(cur.length<=1)return;cur.splice(idx,1);setsDone[exId]=cur;if(window._setReps?.[exId])window._setReps[exId].splice(idx,1);const goalReps=parseInt(document.getElementById(`inp-r-${exId}`)?.value)||8;renderSetRows(exId,cur.length,goalReps);updateMeta(exId);updateProgress();}
 function updateAllSetReps(exId){const goalReps=parseInt(document.getElementById(`inp-r-${exId}`)?.value)||8;const count=setsDone[exId]?.length||0;for(let i=0;i<count;i++){const el=document.getElementById(`setr-${exId}-${i}`);if(el&&!el._edited)el.value=goalReps;}}
+function updateAllSetWeights(exId){const topW=document.getElementById(`inp-w-${exId}`)?.value;const count=setsDone[exId]?.length||0;for(let i=0;i<count;i++){const el=document.getElementById(`setw-${exId}-${i}`);if(el&&!el._edited){el.value=topW||'';}}}
 function renderBubbles(exId,count){const goalReps=parseInt(document.getElementById(`inp-r-${exId}`)?.value)||8;renderSetRows(exId,count,goalReps);}
 function updateSetsCount(exId,val){const c=Math.max(1,Math.min(20,parseInt(val)||1));const goalReps=parseInt(document.getElementById(`inp-r-${exId}`)?.value)||8;renderSetRows(exId,c,goalReps);updateMeta(exId);updateProgress();}
 function toggleExpand(id){expanded[id]=!expanded[id];document.getElementById(`exbody-${id}`).classList.toggle('open',expanded[id]);document.getElementById(`expicon-${id}`).classList.toggle('open',expanded[id]);}
@@ -1844,6 +2017,66 @@ function initSaveSlider(){
 }
 
 // ── FINISH ──
+let _wdateCalYear=0,_wdateCalMonth=0;
+function openWorkoutDateModal(){
+  const today=new Date();
+  _wdateCalYear=today.getFullYear();_wdateCalMonth=today.getMonth();
+  renderWdateCal();
+  document.getElementById('wdate-picker-overlay').classList.add('active');
+  setTimeout(()=>document.getElementById('wdate-picker-sheet').classList.add('open'),10);
+}
+function closeWorkoutDateModal(){
+  const sheet=document.getElementById('wdate-picker-sheet');
+  sheet.classList.remove('open');
+  setTimeout(()=>document.getElementById('wdate-picker-overlay').classList.remove('active'),380);
+}
+function shiftWdateCal(dir){
+  _wdateCalMonth+=dir;
+  if(_wdateCalMonth>11){_wdateCalMonth=0;_wdateCalYear++;}
+  if(_wdateCalMonth<0){_wdateCalMonth=11;_wdateCalYear--;}
+  renderWdateCal();
+}
+function renderWdateCal(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const todayDs=today.toISOString().split('T')[0];
+  const y=_wdateCalYear,m=_wdateCalMonth;
+  const label=new Date(y,m,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}).toUpperCase();
+  document.getElementById('wdate-cal-month').textContent=label;
+  // Disable next button if we're already on current month
+  const nextBtn=document.getElementById('wdate-cal-next');
+  const isCurrentMonth=y===today.getFullYear()&&m===today.getMonth();
+  if(nextBtn)nextBtn.style.opacity=isCurrentMonth?'0.2':'1';
+  if(nextBtn)nextBtn.style.pointerEvents=isCurrentMonth?'none':'auto';
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const grid=document.getElementById('wdate-cal-days');
+  grid.innerHTML='';
+  // Empty cells before first day
+  for(let i=0;i<firstDay;i++){const emp=document.createElement('div');grid.appendChild(emp);}
+  const selectedDs=window._workoutDate||todayDs;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isFuture=ds>todayDs;
+    const isSelected=ds===selectedDs;
+    const isToday=ds===todayDs;
+    const cell=document.createElement('div');
+    cell.textContent=d;
+    cell.className='cal-day'+(isToday?' today':'')+(isSelected?' has-workout':'');
+    if(isFuture){cell.style.opacity='0.2';cell.style.pointerEvents='none';}
+    else{cell.style.cursor='pointer';cell.onclick=()=>selectWorkoutDate(ds);}
+    grid.appendChild(cell);
+  }
+}
+function selectWorkoutDate(ds){
+  window._workoutDate=ds;
+  const todayDs=new Date().toISOString().split('T')[0];
+  const dl=document.getElementById('ws-date-label');
+  if(dl){
+    if(ds===todayDs){dl.textContent='TODAY';}
+    else{const d=new Date(ds+'T00:00:00');dl.textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase();}
+  }
+  closeWorkoutDateModal();
+}
 function finishWorkout(){
   haptic('success');stopTimer();stopRest();const elapsed=getElapsed();const data=WORKOUTS[currentKey];
   const allEx=[...getActiveExercises(currentKey),...(sessionExercises[currentKey]||[])];
@@ -1868,10 +2101,20 @@ function finishWorkout(){
   if(thumb){thumb.style.transition='none';thumb.style.left='4px';}
   setTimeout(initSaveSlider,120);
 }
+function resumeWorkout(){
+  window._pendingLog=null;
+  showScreen('workout-screen');
+  startTime=startTime||Date.now();
+  localStorage.setItem('nova_timer_start',startTime);
+  document.getElementById('header-timer').style.display='flex';
+  document.getElementById('btn-finish').style.display='flex';
+  document.getElementById('btn-finish-bottom').style.display='flex';
+  if(!timerInterval){timerInterval=setInterval(tickTimer,1000);tickTimer();}
+}
 function saveAndGoHome(){
   haptic('success');
   if(window._pendingLog){
-    const ds=new Date().toISOString().split('T')[0];
+    const ds=window._workoutDate||new Date().toISOString().split('T')[0];
     const existing=getWorkoutLogs(ds);existing.push(window._pendingLog);
     localStorage.setItem('nova_log_'+ds,JSON.stringify(existing));window._pendingLog=null;
   }
@@ -2046,13 +2289,121 @@ function renderWeightHistory(){
     const next=logs[i+1];let delta='';
     if(next){const diff=(e.weight-next.weight);const sign=diff>0?'+':'';const cls=diff>0?'up':'down';delta=`<span class="weight-delta ${cls}">${sign}${diff.toFixed(1)}</span>`;}
     const d=new Date(e.date+'T00:00:00');const label=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<div class="weight-entry"><div><div class="weight-entry-val">${e.weight} <span style="font-size:10px;color:var(--muted)">lbs</span></div><div class="weight-entry-date">${label} ${delta}</div></div><div class="weight-entry-del" onclick="deleteWeightEntry('${e.date}')">✕</div></div>`;
+    return `<div class="weight-entry" id="wentry-${e.date}">
+      <div>
+        <div class="weight-entry-val" id="wentry-val-${e.date}">${e.weight} <span style="font-size:10px;color:var(--muted)">lbs</span></div>
+        <div class="weight-entry-date">${label} ${delta}</div>
+        <div class="weight-entry-edit-row" id="wentry-edit-${e.date}" style="display:none;">
+          <input type="number" inputmode="decimal" class="weight-edit-input" id="wentry-input-${e.date}" value="${e.weight}" min="50" max="500" step="0.1">
+          <button class="weight-edit-confirm" onclick="confirmEditWeight('${e.date}')">✓</button>
+          <button class="weight-edit-cancel" onclick="cancelEditWeight('${e.date}')">✗</button>
+        </div>
+      </div>
+      <div class="weight-entry-actions">
+        <button class="weight-entry-btn" title="Edit weight" onclick="startEditWeight('${e.date}')">✏️</button>
+        <button class="weight-entry-btn" title="Change date" onclick="promptWeightMoveDate('${e.date}')">📅</button>
+        <button class="weight-entry-btn" title="Delete" onclick="deleteWeightEntry('${e.date}')">✕</button>
+      </div>
+    </div>`;
   }).join('');
 }
 function deleteWeightEntry(date){showDeleteConfirm('DELETE WEIGHT ENTRY?','This weight log will be permanently removed.',()=>_doDeleteWeightEntry(date));}
 function _doDeleteWeightEntry(date){
   const logs=JSON.parse(localStorage.getItem('nova_weight_log')||'[]');
   localStorage.setItem('nova_weight_log',JSON.stringify(logs.filter(e=>e.date!==date)));
+  renderWeightHistory();renderWeightChart();
+}
+
+// ── INLINE WEIGHT EDIT ──
+function startEditWeight(date){
+  document.getElementById('wentry-val-'+date).style.display='none';
+  const row=document.getElementById('wentry-edit-'+date);
+  row.style.display='flex';
+  const inp=document.getElementById('wentry-input-'+date);
+  if(inp){inp.focus();inp.select();}
+  // allow Enter key to confirm
+  if(inp&&!inp._keyBound){inp._keyBound=true;inp.addEventListener('keydown',function(ev){if(ev.key==='Enter')confirmEditWeight(date);if(ev.key==='Escape')cancelEditWeight(date);});}
+}
+function cancelEditWeight(date){
+  document.getElementById('wentry-edit-'+date).style.display='none';
+  document.getElementById('wentry-val-'+date).style.display='';
+}
+function confirmEditWeight(date){
+  const inp=document.getElementById('wentry-input-'+date);
+  if(!inp)return;
+  const val=parseFloat(inp.value);
+  if(!val||val<50||val>500){inp.focus();return;}
+  const logs=JSON.parse(localStorage.getItem('nova_weight_log')||'[]');
+  const idx=logs.findIndex(e=>e.date===date);
+  if(idx===-1)return;
+  logs[idx].weight=val;
+  localStorage.setItem('nova_weight_log',JSON.stringify(logs));
+  renderWeightHistory();renderWeightChart();
+}
+
+// ── WEIGHT MOVE DATE CALENDAR ──
+let _wMoveDateFromDs=null,_wMoveDateViewYear=null,_wMoveDateViewMonth=null;
+function promptWeightMoveDate(date){
+  _wMoveDateFromDs=date;
+  const parts=date.split('-');
+  _wMoveDateViewYear=parseInt(parts[0]);_wMoveDateViewMonth=parseInt(parts[1])-1;
+  renderWeightMoveDateCalendar();
+  document.getElementById('weight-move-date-modal').classList.add('active');
+}
+function closeWeightMoveDate(){
+  document.getElementById('weight-move-date-modal').classList.remove('active');
+  _wMoveDateFromDs=null;
+}
+function weightDateNavMonth(dir){
+  _wMoveDateViewMonth+=dir;
+  if(_wMoveDateViewMonth<0){_wMoveDateViewMonth=11;_wMoveDateViewYear--;}
+  else if(_wMoveDateViewMonth>11){_wMoveDateViewMonth=0;_wMoveDateViewYear++;}
+  renderWeightMoveDateCalendar();
+}
+function renderWeightMoveDateCalendar(){
+  const todayStr=new Date().toISOString().split('T')[0];
+  const today=new Date();today.setHours(0,0,0,0);
+  const wLogs=JSON.parse(localStorage.getItem('nova_weight_log')||'[]');
+  const hasEntry=ds=>wLogs.some(e=>e.date===ds);
+  const monthNames=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  document.getElementById('weight-move-date-month-label').textContent=monthNames[_wMoveDateViewMonth]+' '+_wMoveDateViewYear;
+  const grid=document.getElementById('weight-move-date-grid');
+  grid.innerHTML='';
+  ['S','M','T','W','T','F','S'].forEach(d=>{const h=document.createElement('div');h.className='move-date-day-hdr';h.textContent=d;grid.appendChild(h);});
+  const firstDay=new Date(_wMoveDateViewYear,_wMoveDateViewMonth,1).getDay();
+  const daysInMonth=new Date(_wMoveDateViewYear,_wMoveDateViewMonth+1,0).getDate();
+  for(let i=0;i<firstDay;i++){grid.appendChild(document.createElement('div'));}
+  for(let d=1;d<=daysInMonth;d++){
+    const cell=document.createElement('div');
+    cell.className='move-date-day';
+    cell.textContent=d;
+    const ds=_wMoveDateViewYear+'-'+String(_wMoveDateViewMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const cellDate=new Date(_wMoveDateViewYear,_wMoveDateViewMonth,d);
+    if(cellDate>today){cell.classList.add('future');}
+    else if(ds===_wMoveDateFromDs){cell.classList.add('origin');}
+    else{
+      if(hasEntry(ds))cell.classList.add('has-workout');
+      if(ds===todayStr)cell.classList.add('today-marker');
+      cell.addEventListener('click',()=>_doMoveWeightDate(ds));
+    }
+    grid.appendChild(cell);
+  }
+}
+function _doMoveWeightDate(toDs){
+  const fromDs=_wMoveDateFromDs;
+  closeWeightMoveDate();
+  if(!fromDs||toDs===fromDs)return;
+  const logs=JSON.parse(localStorage.getItem('nova_weight_log')||'[]');
+  const idx=logs.findIndex(e=>e.date===fromDs);
+  if(idx===-1)return;
+  const entry=logs.splice(idx,1)[0];
+  // if destination already has an entry, overwrite it
+  const destIdx=logs.findIndex(e=>e.date===toDs);
+  if(destIdx>-1)logs.splice(destIdx,1);
+  entry.date=toDs;
+  logs.push(entry);
+  logs.sort((a,b)=>b.date.localeCompare(a.date));
+  localStorage.setItem('nova_weight_log',JSON.stringify(logs));
   renderWeightHistory();renderWeightChart();
 }
 function logWeightFromSummary(){
