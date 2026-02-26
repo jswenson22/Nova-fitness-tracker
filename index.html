@@ -212,8 +212,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 .settings-name-input:focus{border-color:var(--accent);}
 .data-btn{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:10px;
   padding:9px 16px;color:#38bdf8;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;
-  letter-spacing:2px;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;}
+  letter-spacing:2px;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;width:100%;}
 .data-btn:active{background:rgba(56,189,248,0.18);}
+.data-collapsible-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none;}
+.data-collapsible-header .settings-label{margin-bottom:0;}
+.data-collapsible-arrow{font-size:12px;color:var(--muted);transition:transform 0.25s;display:inline-block;}
+.data-collapsible-arrow.open{transform:rotate(90deg);}
+.data-collapsible-body{flex-direction:column;gap:8px;margin-top:10px;}
+.data-collapsible-body.open{display:flex;}
+.data-collapsible-body.closed{display:none;}
+.data-caption{font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-top:2px;}
+.builder-io-row{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.builder-io-btn{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;
+  padding:9px 8px;color:var(--muted);font-family:'Orbitron',monospace;font-size:9px;font-weight:700;
+  letter-spacing:1px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.builder-io-btn:active{background:rgba(255,255,255,0.08);color:var(--text);}
 
 /* ── WORKOUT SCREEN ── */
 #workout-screen{padding:16px;}
@@ -839,8 +852,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </div>
       <div class="settings-section">
-        <div class="settings-label">Data</div>
-        <button class="data-btn" onclick="exportCSV()">📤 EXPORT WORKOUT DATA (CSV)</button>
+        <div class="data-collapsible-header" onclick="toggleDataSection()">
+          <div class="settings-label">Data &amp; Backups</div>
+          <span class="data-collapsible-arrow" id="data-arrow">&rsaquo;</span>
+        </div>
+        <div class="data-collapsible-body closed" id="data-collapsible-body">
+          <button class="data-btn" onclick="exportCSV()">📤 EXPORT WORKOUT LOG (.xlsx)</button>
+          <button class="data-btn" onclick="importLogTrigger()">📥 IMPORT WORKOUT LOG (.xlsx)</button>
+          <input type="file" id="import-log-input" accept=".xlsx" style="display:none" onchange="importLog(this)">
+          <div class="data-caption">Import data exported from another NOVA account. Existing logs are kept.</div>
+        </div>
       </div>
     </div>
 
@@ -996,6 +1017,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <div class="builder-split-items" id="bsplit-chest" style="display:none;"></div>
       </div>
       <button class="builder-new-btn" onclick="openBuilderEditor(null)">+ CREATE NEW WORKOUT</button>
+      <div class="builder-io-row">
+        <button class="builder-io-btn" onclick="exportWorkouts()">📤 EXPORT</button>
+        <button class="builder-io-btn" onclick="importWorkoutsTrigger()">📥 IMPORT</button>
+        <input type="file" id="import-workouts-input" accept=".json" style="display:none" onchange="importWorkouts(this)">
+      </div>
     </div>
     <!-- EDITOR VIEW -->
     <div class="builder-editor" id="builder-editor">
@@ -1136,6 +1162,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="confirm-btns">
       <button class="confirm-stay" onclick="genericDeleteCancel()">CANCEL</button>
       <button class="confirm-leave" id="generic-delete-confirm-btn">DELETE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ IMPORT CONFLICT MODAL ══ -->
+<div class="confirm-modal" id="import-conflict-modal">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title">CONFLICT</div>
+    <div class="confirm-sub" id="import-conflict-sub">A workout with this name already exists.</div>
+    <div class="confirm-btns">
+      <button class="confirm-stay" id="import-conflict-keep-btn">KEEP ORIGINAL</button>
+      <button class="confirm-leave" id="import-conflict-use-btn" style="background:rgba(167,139,250,0.15);border-color:var(--accent);color:var(--accent);">USE IMPORTED</button>
     </div>
   </div>
 </div>
@@ -2662,6 +2701,144 @@ function openCustomWorkout(i){
   const key='custom_'+w.id;
   WORKOUTS[key]={name:w.name,exercises:w.exercises.map((ex,j)=>({id:ex.id,priority:j+1,swaps:ex.swaps,sets:ex.sets,reps:ex.reps}))};
   openWorkout(key);
+}
+
+// ── DATA SECTION COLLAPSIBLE ──
+function toggleDataSection(){
+  const body=document.getElementById('data-collapsible-body');
+  const arrow=document.getElementById('data-arrow');
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  body.classList.toggle('closed',isOpen);
+  if(arrow)arrow.classList.toggle('open',!isOpen);
+}
+
+// ── IMPORT WORKOUT LOG ──
+function importLogTrigger(){document.getElementById('import-log-input').value='';document.getElementById('import-log-input').click();}
+function importLog(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets['Workouts'];
+      if(!ws){alert('Could not find a "Workouts" sheet. Make sure this is a NOVA export.');return;}
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      // Group rows into logs: key = date + workout name
+      const grouped={};
+      rows.forEach(row=>{
+        const date=row['Date']||'';const workout=row['Workout']||'';const duration=row['Duration']||'';
+        const exercise=row['Exercise']||'';const set=row['Set']||'';const weight=row['Weight (lbs)']||'';const reps=row['Reps']||'';
+        if(!date||!workout)return;
+        const gkey=date+'|||'+workout;
+        if(!grouped[gkey])grouped[gkey]={date,workout,duration,exerciseMap:{}};
+        if(exercise&&exercise!=='—'){
+          if(!grouped[gkey].exerciseMap[exercise])grouped[gkey].exerciseMap[exercise]={name:exercise,weight:parseFloat(weight)||null,reps:parseInt(reps)||0,sets:0};
+          grouped[gkey].exerciseMap[exercise].sets++;
+        }
+      });
+      let imported=0;
+      Object.values(grouped).forEach(g=>{
+        const exercises=Object.values(g.exerciseMap);
+        const totalVol=exercises.reduce((s,ex)=>s+(ex.weight||0)*(ex.reps||0)*(ex.sets||0),0);
+        const log={workout:g.workout,duration:g.duration,volume:totalVol,setsCompleted:exercises.reduce((s,ex)=>s+ex.sets,0),exerciseCount:exercises.length,exercises:exercises.map(ex=>({name:ex.name,weight:ex.weight,reps:ex.reps,sets:ex.sets}))};
+        const existing=getWorkoutLogs(g.date);
+        existing.push(log);
+        localStorage.setItem('nova_log_'+g.date,JSON.stringify(existing));
+        imported++;
+      });
+      renderCalendar();renderProgressStats();renderWeeklyRing();updateHomeStats();
+      alert('Imported '+imported+' workout'+(imported===1?'':'s')+' successfully!');
+    }catch(err){alert('Failed to read file. Make sure this is a NOVA export (.xlsx). '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── EXPORT WORKOUTS (JSON) ──
+function exportWorkouts(){
+  const customs=loadCustomWorkouts();
+  const overrides=loadDefaultOverrides();
+  const payload={version:1,customWorkouts:customs,defaultOverrides:overrides};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='nova-workouts.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// ── IMPORT WORKOUTS (JSON) ──
+function importWorkoutsTrigger(){document.getElementById('import-workouts-input').value='';document.getElementById('import-workouts-input').click();}
+function importWorkouts(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const payload=JSON.parse(e.target.result);
+      const importedCustoms=payload.customWorkouts||[];
+      const importedOverrides=payload.defaultOverrides||{};
+      // Process sequentially through conflicts
+      const existingCustoms=loadCustomWorkouts();
+      const existingOverrides=loadDefaultOverrides();
+      // Build queue of conflicts to resolve
+      const customConflicts=[];
+      const customNoConflict=[];
+      importedCustoms.forEach(iw=>{
+        const match=existingCustoms.find(ew=>ew.name===iw.name);
+        if(match)customConflicts.push({imported:iw,existing:match});
+        else customNoConflict.push(iw);
+      });
+      const overrideConflicts=[];
+      const overrideNoConflict={};
+      Object.keys(importedOverrides).forEach(split=>{
+        if(existingOverrides[split])overrideConflicts.push({split,imported:importedOverrides[split],existing:existingOverrides[split]});
+        else overrideNoConflict[split]=importedOverrides[split];
+      });
+      // Apply non-conflicting items immediately
+      customNoConflict.forEach(iw=>{
+        iw.id='cw_import_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+        existingCustoms.push(iw);
+      });
+      Object.assign(existingOverrides,overrideNoConflict);
+      saveCustomWorkouts(existingCustoms);saveDefaultOverrides(existingOverrides);
+      // Process conflict queue
+      const allConflicts=[
+        ...customConflicts.map(c=>({type:'custom',...c})),
+        ...overrideConflicts.map(c=>({type:'override',...c}))
+      ];
+      function processNextConflict(idx){
+        if(idx>=allConflicts.length){renderBuilderList();alert('Workouts imported successfully!');return;}
+        const c=allConflicts[idx];
+        const modal=document.getElementById('import-conflict-modal');
+        const sub=document.getElementById('import-conflict-sub');
+        const keepBtn=document.getElementById('import-conflict-keep-btn');
+        const useBtn=document.getElementById('import-conflict-use-btn');
+        if(c.type==='custom'){
+          sub.textContent='"'+c.existing.name+'" already exists. Which version do you want to keep?';
+        } else {
+          const splitNames={leg:'Leg Day',back:'Back + Bi',chest:'Chest + Tri'};
+          sub.textContent="You've customized '"+(splitNames[c.split]||c.split)+"'. Keep your version or use the imported one?";
+        }
+        const freshKeep=keepBtn.cloneNode(true);keepBtn.parentNode.replaceChild(freshKeep,keepBtn);
+        const freshUse=useBtn.cloneNode(true);useBtn.parentNode.replaceChild(freshUse,useBtn);
+        freshKeep.addEventListener('click',()=>{modal.classList.remove('active');processNextConflict(idx+1);});
+        freshUse.addEventListener('click',()=>{
+          modal.classList.remove('active');
+          const cur=loadCustomWorkouts();const ov=loadDefaultOverrides();
+          if(c.type==='custom'){
+            const i=cur.findIndex(w=>w.name===c.existing.name);
+            if(i>=0){c.imported.id=cur[i].id;cur[i]=c.imported;}
+            saveCustomWorkouts(cur);
+          } else {
+            ov[c.split]=c.imported;saveDefaultOverrides(ov);
+          }
+          processNextConflict(idx+1);
+        });
+        modal.classList.add('active');
+      }
+      processNextConflict(0);
+    }catch(err){alert('Failed to read file. Make sure this is a NOVA workouts export (.json). '+err.message);}
+  };
+  reader.readAsText(file);
 }
 
 // ── BOOT ──
