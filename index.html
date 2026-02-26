@@ -591,7 +591,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
 .edit-log-overlay.active{display:flex;flex-direction:column;}
 .edit-log-sheet{background:var(--bg2);border-radius:20px 20px 0 0;border-top:1px solid var(--border);
-  display:flex;flex-direction:column;max-height:92vh;width:100%;margin-top:auto;
+  display:flex;flex-direction:column;max-height:80vh;width:100%;margin-top:auto;
   transform:translateY(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);}
 .edit-log-sheet.open{transform:translateY(0);}
 .edit-log-header{display:flex;align-items:center;justify-content:space-between;
@@ -1305,7 +1305,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     <div class="edit-log-handle"></div>
     <div class="edit-log-header">
       <div class="edit-log-title">✏️ EDIT WORKOUT</div>
-      <button class="edit-log-close" onclick="closeEditLog()">✕</button>
     </div>
     <div class="edit-log-body" id="edit-log-body">
       <!-- dynamically rendered -->
@@ -2819,11 +2818,32 @@ function openEditLog(ds,idx){
   const sheet=document.getElementById('edit-log-sheet');
   overlay.classList.add('active');
   setTimeout(()=>sheet.classList.add('open'),10);
+
+  // Swipe-down-to-close on handle and header
+  const handle=sheet.querySelector('.edit-log-handle');
+  const header=sheet.querySelector('.edit-log-header');
+  [handle,header].forEach(el=>{
+    let startY=0,dragging=false;
+    el.addEventListener('touchstart',e=>{startY=e.touches[0].clientY;dragging=true;},{passive:true});
+    el.addEventListener('touchmove',e=>{
+      if(!dragging)return;
+      const dy=e.touches[0].clientY-startY;
+      if(dy>0)sheet.style.transform=`translateY(${dy}px)`;
+    },{passive:true});
+    el.addEventListener('touchend',e=>{
+      if(!dragging)return;
+      dragging=false;
+      const dy=e.changedTouches[0].clientY-startY;
+      if(dy>80){closeEditLog();}
+      else{sheet.style.transform='';}
+    },{passive:true});
+  });
 }
 
 function closeEditLog(){
   const sheet=document.getElementById('edit-log-sheet');
   const overlay=document.getElementById('edit-log-overlay');
+  sheet.style.transform='';
   sheet.classList.remove('open');
   setTimeout(()=>overlay.classList.remove('active'),380);
   _editLogDs=null;_editLogIdx=null;_editLogExercises=[];
@@ -2905,14 +2925,14 @@ function renderEditLogSetRow(exIdx,setIdx,container){
   const numDiv=document.createElement('div');numDiv.className='edit-log-set-num';numDiv.textContent='S'+(setIdx+1);
 
   // Weight input group
-  const wGroup=document.createElement('div');wGroup.style.flex='1';wGroup.style.display='flex';wGroup.style.flexDirection='column';
+  const wGroup=document.createElement('div');wGroup.style.flex='1';wGroup.style.maxWidth='90px';wGroup.style.display='flex';wGroup.style.flexDirection='column';
   const wInput=document.createElement('input');wInput.className='edit-log-set-input';wInput.type='number';wInput.inputMode='decimal';wInput.placeholder='lbs';wInput.min='0';wInput.value=setData.weight||'';
   wInput.oninput=e=>_editLogExercises[exIdx].sets[setIdx].weight=e.target.value;
   const wLabel=document.createElement('div');wLabel.className='edit-log-set-label';wLabel.textContent='LBS';
   wGroup.appendChild(wInput);wGroup.appendChild(wLabel);
 
   // Reps input group
-  const rGroup=document.createElement('div');rGroup.style.flex='1';rGroup.style.display='flex';rGroup.style.flexDirection='column';
+  const rGroup=document.createElement('div');rGroup.style.flex='1';rGroup.style.maxWidth='90px';rGroup.style.display='flex';rGroup.style.flexDirection='column';
   const rInput=document.createElement('input');rInput.className='edit-log-set-input';rInput.type='number';rInput.inputMode='numeric';rInput.placeholder='reps';rInput.min='0';rInput.value=setData.reps||'';
   rInput.oninput=e=>_editLogExercises[exIdx].sets[setIdx].reps=parseInt(e.target.value)||0;
   const rLabel=document.createElement('div');rLabel.className='edit-log-set-label';rLabel.textContent='REPS';
