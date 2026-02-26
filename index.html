@@ -654,6 +654,31 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
   border-radius:14px;color:var(--muted);font-family:'Orbitron',monospace;font-size:11px;
   font-weight:700;letter-spacing:2px;cursor:pointer;}
 
+/* ── DURATION SCROLL PICKER ── */
+.duration-picker{display:flex;align-items:flex-end;justify-content:center;gap:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:0 8px 0;margin-bottom:10px;overflow:hidden;position:relative;height:172px;}
+.dp-selection{position:absolute;top:44px;left:0;right:0;
+  height:44px;border-top:1px solid var(--border2);border-bottom:1px solid var(--border2);
+  background:rgba(167,139,250,0.09);pointer-events:none;z-index:2;}
+.dp-col-wrap{display:flex;flex-direction:column;align-items:center;gap:0;flex:1;position:relative;z-index:4;}
+.dp-label{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;
+  color:rgba(255,255,255,0.55);margin-bottom:4px;flex-shrink:0;}
+.dp-col{height:132px;overflow:hidden;position:relative;width:100%;cursor:grab;}
+.dp-col:active{cursor:grabbing;}
+.dp-col::before,.dp-col::after{content:'';position:absolute;left:0;right:0;height:40px;pointer-events:none;z-index:5;}
+.dp-col::before{top:0;background:linear-gradient(to bottom,var(--bg2) 0%,rgba(8,8,24,0) 100%);}
+.dp-col::after{bottom:0;background:linear-gradient(to top,var(--bg2) 0%,rgba(8,8,24,0) 100%);}
+.dp-inner{display:flex;flex-direction:column;align-items:center;
+  transition:transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94);}
+.dp-item{height:44px;display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:20px;font-weight:700;
+  color:rgba(255,255,255,0.22);transition:color 0.15s,transform 0.15s;width:100%;
+  user-select:none;-webkit-user-select:none;}
+.dp-item.selected{color:var(--accent);transform:scale(1.1);}
+.dp-sep{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;
+  color:var(--border2);padding:0 2px;margin-bottom:44px;position:relative;z-index:4;}
+
 .builder-split-section{margin-bottom:10px;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
 .builder-split-header{display:flex;align-items:center;justify-content:space-between;
   padding:14px 16px;background:var(--surface);cursor:pointer;
@@ -2849,6 +2874,159 @@ function closeEditLog(){
   _editLogDs=null;_editLogIdx=null;_editLogExercises=[];
 }
 
+// ── DURATION SCROLL PICKER ──
+function parseDurationStr(str){
+  let h=0,m=0,s=0;
+  if(!str)return{h,m,s};
+  const hm=str.match(/(\d+)\s*h/i);const mm=str.match(/(\d+)\s*m/i);const sm=str.match(/(\d+)\s*s/i);
+  if(hm)h=parseInt(hm[1]);if(mm)m=parseInt(mm[1]);if(sm)s=parseInt(sm[1]);
+  // Also handle plain "HH:MM:SS" or "MM:SS"
+  if(!hm&&!mm&&!sm){
+    const parts=str.split(':').map(Number);
+    if(parts.length===3){h=parts[0]||0;m=parts[1]||0;s=parts[2]||0;}
+    else if(parts.length===2){m=parts[0]||0;s=parts[1]||0;}
+    else if(parts.length===1&&!isNaN(parts[0])){m=parts[0]||0;}
+  }
+  return{h:Math.min(23,Math.max(0,h)),m:Math.min(59,Math.max(0,m)),s:Math.min(59,Math.max(0,s))};
+}
+
+function readDurationPicker(){
+  const picker=document.getElementById('dp-root');
+  if(!picker)return'';
+  const h=parseInt(picker.dataset.h)||0;
+  const m=parseInt(picker.dataset.m)||0;
+  const s=parseInt(picker.dataset.s)||0;
+  // Match getElapsed() format: "1h 45m 30s" or "45m 30s"
+  if(h>0)return`${h}h ${m}m ${s}s`;
+  return`${m}m ${s}s`;
+}
+
+function buildDurationPicker(currentStr){
+  const init=parseDurationStr(currentStr);
+  const wrap=document.createElement('div');
+  wrap.className='duration-picker';wrap.id='dp-root';
+  wrap.dataset.h=init.h;wrap.dataset.m=init.m;wrap.dataset.s=init.s;
+
+  function makeCol(id,max,initVal,labelText,key){
+    const colWrap=document.createElement('div');colWrap.className='dp-col-wrap';
+    const label=document.createElement('div');label.className='dp-label';label.textContent=labelText;
+    colWrap.appendChild(label);
+    const col=document.createElement('div');col.className='dp-col';
+    const colSel=document.createElement('div');colSel.className='dp-selection';col.appendChild(colSel);
+    const inner=document.createElement('div');inner.className='dp-inner';col.appendChild(inner);
+
+    const ITEM_H=44;
+    const items=[];
+
+    // Top spacer so item 0 can be centered
+    const topSpacer=document.createElement('div');topSpacer.style.height=ITEM_H+'px';topSpacer.style.flexShrink='0';inner.appendChild(topSpacer);
+
+    for(let i=0;i<=max;i++){
+      const item=document.createElement('div');item.className='dp-item';
+      item.textContent=String(i).padStart(2,'0');
+      item.dataset.val=i;inner.appendChild(item);items.push(item);
+    }
+
+    // Bottom spacer so max value can be centered
+    const botSpacer=document.createElement('div');botSpacer.style.height=ITEM_H+'px';botSpacer.style.flexShrink='0';inner.appendChild(botSpacer);
+
+    let currentIdx=initVal;
+    let startY=0,startOffset=0,isDragging=false,vel=0,lastY=0,lastT=0;
+
+    // With spacers: offset for item i = -(i * ITEM_H)  (spacer shifts everything by 1 slot)
+    function getOffset(idx){return -idx*ITEM_H;}
+    function clamp(idx){return Math.max(0,Math.min(max,idx));}
+
+    function updateHighlight(idx){
+      items.forEach((it,i)=>it.classList.toggle('selected',i===idx));
+    }
+
+    function applyOffset(offset,animate){
+      if(animate)inner.style.transition='transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)';
+      else inner.style.transition='none';
+      inner.style.transform=`translateY(${offset}px)`;
+      const idx=clamp(Math.round(-offset/ITEM_H));
+      updateHighlight(idx);
+    }
+
+    function snapTo(idx,animate){
+      idx=clamp(idx);currentIdx=idx;
+      wrap.dataset[key]=idx;
+      applyOffset(getOffset(idx),animate);
+    }
+
+    snapTo(initVal,false);
+
+    // Touch
+    col.addEventListener('touchstart',e=>{
+      const t=e.touches[0];startY=t.clientY;vel=0;lastY=t.clientY;lastT=Date.now();
+      const cur=new DOMMatrix(getComputedStyle(inner).transform);startOffset=cur.m42;
+      inner.style.transition='none';isDragging=true;
+    },{passive:true});
+
+    col.addEventListener('touchmove',e=>{
+      if(!isDragging)return;
+      const t=e.touches[0];const dy=t.clientY-startY;
+      const now=Date.now();vel=(t.clientY-lastY)/(now-lastT||1)*16;lastY=t.clientY;lastT=now;
+      let offset=startOffset+dy;
+      offset=Math.max(getOffset(max),Math.min(getOffset(0),offset));
+      inner.style.transform=`translateY(${offset}px)`;
+      updateHighlight(clamp(Math.round(-offset/ITEM_H)));
+    },{passive:true});
+
+    col.addEventListener('touchend',()=>{
+      if(!isDragging)return;isDragging=false;
+      const cur=new DOMMatrix(getComputedStyle(inner).transform);
+      let offset=cur.m42+vel*4;
+      snapTo(clamp(Math.round(-offset/ITEM_H)),true);
+    });
+
+    // Mouse wheel
+    col.addEventListener('wheel',e=>{
+      e.preventDefault();
+      snapTo(clamp(currentIdx+(e.deltaY>0?1:-1)),true);
+    },{passive:false});
+
+    // Mouse drag
+    col.addEventListener('mousedown',e=>{
+      startY=e.clientY;vel=0;lastY=e.clientY;lastT=Date.now();
+      const cur=new DOMMatrix(getComputedStyle(inner).transform);startOffset=cur.m42;
+      inner.style.transition='none';isDragging=true;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove',e=>{
+      if(!isDragging)return;
+      const dy=e.clientY-startY;
+      const now=Date.now();vel=(e.clientY-lastY)/(now-lastT||1)*16;lastY=e.clientY;lastT=now;
+      let offset=startOffset+dy;
+      offset=Math.max(getOffset(max),Math.min(getOffset(0),offset));
+      inner.style.transform=`translateY(${offset}px)`;
+      updateHighlight(clamp(Math.round(-offset/ITEM_H)));
+    });
+    document.addEventListener('mouseup',()=>{
+      if(!isDragging)return;isDragging=false;
+      const cur=new DOMMatrix(getComputedStyle(inner).transform);
+      let offset=cur.m42+vel*4;
+      snapTo(clamp(Math.round(-offset/ITEM_H)),true);
+    });
+
+    colWrap.appendChild(col);
+    return colWrap;
+  }
+
+  const sep1=document.createElement('div');sep1.className='dp-sep';sep1.textContent=':';
+  const sep2=document.createElement('div');sep2.className='dp-sep';sep2.textContent=':';
+
+  wrap.appendChild(makeCol('dp-h',23,init.h,'HRS','h'));
+  wrap.appendChild(sep1);
+  wrap.appendChild(makeCol('dp-m',59,init.m,'MIN','m'));
+  wrap.appendChild(sep2);
+  wrap.appendChild(makeCol('dp-s',59,init.s,'SEC','s'));
+
+  return wrap;
+}
+
+
 function renderEditLogBody(log){
   const body=document.getElementById('edit-log-body');
   body.innerHTML='';
@@ -2859,7 +3037,7 @@ function renderEditLogBody(log){
 
   // Duration
   const durLabel=document.createElement('div');durLabel.className='edit-log-section-label';durLabel.textContent='DURATION';body.appendChild(durLabel);
-  const durInput=document.createElement('input');durInput.className='edit-log-field';durInput.id='edit-log-duration';durInput.value=log.duration||'';durInput.placeholder='e.g. 45m 30s';body.appendChild(durInput);
+  body.appendChild(buildDurationPicker(log.duration||''));
 
   // Exercises
   const exLabel=document.createElement('div');exLabel.className='edit-log-section-label';exLabel.textContent='EXERCISES';body.appendChild(exLabel);
@@ -2960,7 +3138,7 @@ function saveEditLog(){
 
   // Read name + duration
   log.workout=document.getElementById('edit-log-name').value.trim()||log.workout;
-  log.duration=document.getElementById('edit-log-duration').value.trim()||log.duration;
+  log.duration=readDurationPicker()||log.duration;
 
   // Rebuild exercises from _editLogExercises
   const newExercises=_editLogExercises.filter(ex=>ex.name.trim()).map(ex=>{
