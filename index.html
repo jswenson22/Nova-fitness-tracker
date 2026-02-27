@@ -1793,6 +1793,7 @@ function showDayLog(dateStr,logs){
         </div>
       </div>
 
+      ${i===0?weightLine:''}
       <div class="day-log-stat">Duration <span>${log.duration}</span></div>
       <div class="day-log-stat">Total Volume <span>${(log.volume||0).toLocaleString()} lbs</span></div>
       <div class="day-log-stat">Sets Completed <span>${log.setsCompleted||0}</span></div>
@@ -1800,7 +1801,7 @@ function showDayLog(dateStr,logs){
       ${(log.exercises||[]).map(e=>`<div class="day-log-stat">${e.name} <span>${e.weight?e.weight+'lbs × '+e.reps+'reps × '+(e.sets||0)+'sets':e.reps+'reps × '+(e.sets||0)+'sets'}</span></div>`).join('')}
     </div>`).join('');
   document.getElementById('day-log-name').textContent='';
-  document.getElementById('day-log-stats').innerHTML=weightLine+html;
+  document.getElementById('day-log-stats').innerHTML=html;
   el.classList.add('active');
 }
 function deleteWorkoutLog(ds,idx,workoutName){
