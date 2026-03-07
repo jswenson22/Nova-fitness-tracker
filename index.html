@@ -564,7 +564,7 @@
 </div>
 
 <!-- ══ FOOD SEARCH SHEET ══ -->
-<div class="picker-overlay" id="food-search-overlay" onclick="if(window._addingFoodForTemplate){finishAddingFoodsToMeal();}else{closeFoodSearch();}"></div>
+<div class="picker-overlay" id="food-search-overlay" onclick="if(_addingFoodForTemplate){finishAddingFoodsToMeal();}else{closeFoodSearch();}"></div>
 <div class="picker-sheet" id="food-search-sheet">
   <div class="picker-handle"></div>
   <div class="picker-title" id="food-sheet-title">// ADD FOOD</div>
@@ -1583,7 +1583,7 @@ function init(){
   addSwipeToDismiss('variant-picker-sheet',closeVariantPicker);
   addSwipeToDismiss('pr-history-sheet',closePRHistory);
   addSwipeToDismiss('wdate-picker-sheet',closeWorkoutDateModal);
-  addSwipeToDismiss('food-search-sheet',closeFoodSearch);
+  addSwipeToDismiss('food-search-sheet',()=>{if(_addingFoodForTemplate){finishAddingFoodsToMeal();}else{closeFoodSearch();}});
   addSwipeToDismiss('food-detail-sheet',closeFoodDetail);
   addSwipeToCloseFullSheet('builder-sheet','builder-body',closeBuilder,false);
   setTimeout(()=>addSwipeToCloseFullSheet('meal-builder-sheet','meal-builder-body',closeMealTemplateBuilder,false),0);
@@ -2945,15 +2945,26 @@ function selectCommonFood(i){
 function addManualFood(){
   const name=(document.getElementById('manual-name')?.value||'').trim();
   if(!name){document.getElementById('manual-name')?.focus();return;}
+  const calories=Math.round(parseFloat(document.getElementById('manual-cal').value)||0);
+  const protein=Math.round(parseFloat(document.getElementById('manual-protein').value)*10)/10||0;
+  const carbs=Math.round(parseFloat(document.getElementById('manual-carbs').value)*10)/10||0;
+  const fat=Math.round(parseFloat(document.getElementById('manual-fat').value)*10)/10||0;
+  if(_addingFoodForTemplate){
+    const servingG=100;
+    const food={name,calories,protein,carbs,fat,servingG,sourceId:null,cal100:calories,p100:protein,c100:carbs,f100:fat};
+    _mealBuilderFoods.push(food);
+    ['manual-name','manual-cal','manual-protein','manual-carbs','manual-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    const cnt=document.getElementById('food-sheet-meal-count');
+    if(cnt)cnt.textContent=_mealBuilderFoods.length+' food'+(_mealBuilderFoods.length!==1?'s':'')+' added';
+    showNutrTooltip('"'+name+'" added to meal');
+    haptic('success');
+    return;
+  }
   const ds=currentNutrDs||getTodayDs();
   const log=getNutritionLog(ds);
   const now=new Date();
   log.meals.push({
-    id:Date.now().toString(),name,
-    calories:Math.round(parseFloat(document.getElementById('manual-cal').value)||0),
-    protein:Math.round(parseFloat(document.getElementById('manual-protein').value)*10)/10||0,
-    carbs:Math.round(parseFloat(document.getElementById('manual-carbs').value)*10)/10||0,
-    fat:Math.round(parseFloat(document.getElementById('manual-fat').value)*10)/10||0,
+    id:Date.now().toString(),name,calories,protein,carbs,fat,
     time:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')
   });
   saveNutritionLog(ds,log);
@@ -4486,9 +4497,13 @@ function addToMealCreateNew(){
   closeAddToMealMenu();
   _mealBuilderFoods=[foodEntry];
   _mealBuilderEditIdx=null;
+  const _savedNewFood=[foodEntry];
   setTimeout(()=>{
     _openMealBuilderNow();
-    setTimeout(()=>openMealTemplateEditor(null),50);
+    setTimeout(()=>{
+      openMealTemplateEditor(null);
+      setTimeout(()=>{_mealBuilderFoods=_savedNewFood;renderMealBuilderFoods();},0);
+    },50);
   },100);
 }
 
