@@ -34,7 +34,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=2">
 <style>
 /* ── PICKER MODE TABS ── */
 .picker-mode-tabs{display:flex;gap:8px;margin-bottom:14px;}
@@ -119,22 +119,40 @@
 
       <div class="section-label">// THIS WEEK</div>
       <div class="weekly-ring-wrap" id="weekly-ring-wrap">
-        <svg class="weekly-ring-svg" width="80" height="80" viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-          <circle id="weekly-ring-arc" cx="40" cy="40" r="32" fill="none"
-            stroke="url(#ringGrad)" stroke-width="8" stroke-linecap="round"
-            stroke-dasharray="201" stroke-dashoffset="201" transform="rotate(-90 40 40)"
-            style="transition:stroke-dashoffset 0.6s ease;"/>
-          <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#38bdf8"/>
-          </linearGradient></defs>
-        </svg>
-        <div class="weekly-ring-info">
-          <div class="weekly-ring-label">WEEKLY GOAL</div>
-          <div class="weekly-ring-count"><span id="weekly-done-count">0</span><span style="font-size:16px;color:var(--muted);font-weight:400;"> / <span id="weekly-goal-count">3</span></span></div>
-          <div class="weekly-ring-goal" id="weekly-ring-sub">0 workouts this week</div>
-          <div class="weekly-days-row" id="weekly-days-row"></div>
+        <div class="weekly-rings-row">
+          <div class="weekly-ring-col">
+            <div class="weekly-ring-label">🏋️ LIFT</div>
+            <svg class="weekly-ring-svg" width="74" height="74" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+              <circle id="weekly-ring-arc" cx="40" cy="40" r="32" fill="none"
+                stroke="url(#ringGrad)" stroke-width="8" stroke-linecap="round"
+                stroke-dasharray="201" stroke-dashoffset="201" transform="rotate(-90 40 40)"
+                style="transition:stroke-dashoffset 0.6s ease;"/>
+              <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient></defs>
+            </svg>
+            <div class="weekly-ring-count"><span id="weekly-done-count">0</span><span class="weekly-ring-of"> / <span id="weekly-goal-count">3</span></span></div>
+            <div class="weekly-ring-goal" id="weekly-ring-sub"></div>
+          </div>
+          <div class="weekly-ring-sep"></div>
+          <div class="weekly-ring-col">
+            <div class="weekly-ring-label">🏃 CARDIO</div>
+            <svg class="weekly-ring-svg" width="74" height="74" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+              <circle id="weekly-cardio-ring-arc" cx="40" cy="40" r="32" fill="none"
+                stroke="url(#cardioRingGrad)" stroke-width="8" stroke-linecap="round"
+                stroke-dasharray="201" stroke-dashoffset="201" transform="rotate(-90 40 40)"
+                style="transition:stroke-dashoffset 0.6s ease;"/>
+              <defs><linearGradient id="cardioRingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/>
+              </linearGradient></defs>
+            </svg>
+            <div class="weekly-ring-count cardio-count"><span id="weekly-cardio-done-count">0</span><span class="weekly-ring-of"> / <span id="weekly-cardio-goal-count">2</span></span></div>
+            <div class="weekly-ring-goal" id="weekly-cardio-ring-sub"></div>
+          </div>
         </div>
+        <div class="weekly-days-row" id="weekly-days-row"></div>
       </div>
 
       <div class="section-label">// BODY WEIGHT</div>
@@ -271,11 +289,19 @@
         </div>
       </div>
       <div class="settings-section">
-        <div class="settings-label">Weekly Workout Goal</div>
+        <div class="settings-label">Weekly Lift Goal</div>
         <div class="slider-row">
           <input type="range" min="1" max="7" step="1" id="settings-weekly-goal"
             oninput="document.getElementById('weekly-goal-val').textContent=this.value+'x';saveSetting('weeklyGoal',this.value);renderWeeklyRing();">
           <div class="slider-val" id="weekly-goal-val">3x</div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-label">Weekly Cardio Goal</div>
+        <div class="slider-row">
+          <input type="range" min="0" max="7" step="1" id="settings-cardio-goal"
+            oninput="document.getElementById('cardio-goal-val').textContent=this.value+'x';saveSetting('cardioWeeklyGoal',this.value);renderWeeklyRing();">
+          <div class="slider-val" id="cardio-goal-val">2x</div>
         </div>
       </div>
       <div class="settings-section">
@@ -1482,7 +1508,7 @@ function finishCardioWorkout(){
   const now=new Date();
   document.getElementById('summary-date').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
   // Pending log
-  window._pendingLog={type:'cardio',workout:(ct?ct.icon+' '+ct.name:'🏃 CARDIO'),cardioKey,duration:elapsed.str,calories:finalCals,intensity:cardioIntensity,distanceMi:distVal,notes,volume:0,setsCompleted:0,exerciseCount:0,exercises:[]};
+  window._pendingLog={type:'cardio',workout:(ct?ct.icon+' '+ct.name:'🏃 CARDIO'),cardioKey,met:ct?ct.met:7,duration:elapsed.str,calories:finalCals,intensity:cardioIntensity,distanceMi:distVal,notes,volume:0,setsCompleted:0,exerciseCount:0,exercises:[]};
   document.getElementById('summary-weight-prompt').style.display='none';
   showScreen('summary-screen');
   setTimeout(initSaveSlider,120);
@@ -1550,6 +1576,7 @@ function init(){
   if(!settings.duration)settings.duration=60;
   if(!settings.rest)settings.rest=90;
   if(!settings.weeklyGoal)settings.weeklyGoal=3;
+  if(settings.cardioWeeklyGoal===undefined)settings.cardioWeeklyGoal=2;
   document.getElementById('settings-name').value=settings.name||'';
   document.getElementById('settings-duration').value=settings.duration;
   document.getElementById('duration-val').textContent=settings.duration+'m';
@@ -1557,6 +1584,8 @@ function init(){
   document.getElementById('rest-val').textContent=settings.rest+'s';
   document.getElementById('settings-weekly-goal').value=settings.weeklyGoal;
   document.getElementById('weekly-goal-val').textContent=settings.weeklyGoal+'x';
+  document.getElementById('settings-cardio-goal').value=settings.cardioWeeklyGoal;
+  document.getElementById('cardio-goal-val').textContent=settings.cardioWeeklyGoal+'x';
   selectGoal(settings.goal,true);
   applyGoalBarColor();
   updateGreeting();
@@ -1878,9 +1907,12 @@ function renderCalendar(){
   for(let d=1;d<=days;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const logs=getWorkoutLogs(ds);const isToday=d===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();
-    const hasLog=logs.length>0;
     const nutrLog=getNutritionLog(ds);
-    const cell=document.createElement('div');cell.className='cal-day'+(hasLog?' has-workout':'')+(isToday?' today':'');cell.textContent=d;
+    const hasLift=logs.some(l=>l.type!=='cardio');const hasCardio=logs.some(l=>l.type==='cardio');
+    let cellCls='cal-day';
+    if(hasLift&&hasCardio)cellCls+=' has-both';else if(hasLift)cellCls+=' has-lift';else if(hasCardio)cellCls+=' has-cardio';
+    if(isToday)cellCls+=' today';
+    const cell=document.createElement('div');cell.className=cellCls;cell.textContent=d;
     cell.onclick=()=>{
       const dl=document.getElementById('day-log');
       const currentDs=document.getElementById('day-log-date').textContent;
@@ -3269,28 +3301,47 @@ function exportXLSX(){
 
 // ── WEEKLY RING ──
 function renderWeeklyRing(){
-  const goal=parseInt(settings.weeklyGoal)||3;
+  const liftGoal=parseInt(settings.weeklyGoal)||3;
+  const cardioGoal=parseInt(settings.cardioWeeklyGoal)||0;
   const today=new Date();
   const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay());weekStart.setHours(0,0,0,0);
-  let doneThisWeek=0;const doneDayNums=new Set();
+  let liftDone=0,cardioDone=0;
+  const doneLiftDays=new Set(),doneCardioDays=new Set();
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);if(!k.startsWith('nova_log_'))continue;
     const ds=k.replace('nova_log_','');const logs=getWorkoutLogs(ds);if(logs.length===0)continue;
     const d=new Date(ds+'T00:00:00');
-    if(d>=weekStart){doneThisWeek+=logs.length;doneDayNums.add(d.getDay());}
+    if(d>=weekStart){
+      logs.forEach(log=>{
+        if(log.type==='cardio'){cardioDone++;doneCardioDays.add(d.getDay());}
+        else{liftDone++;doneLiftDays.add(d.getDay());}
+      });
+    }
   }
+  // Lift ring
   const arc=document.getElementById('weekly-ring-arc');
-  if(arc){const circ=2*Math.PI*32;const pct=Math.min(1,doneThisWeek/goal);arc.style.strokeDashoffset=circ*(1-pct);}
+  if(arc){const circ=2*Math.PI*32;const pct=Math.min(1,liftDone/liftGoal);arc.style.strokeDashoffset=circ*(1-pct);}
   const doneEl=document.getElementById('weekly-done-count');const goalEl=document.getElementById('weekly-goal-count');const subEl=document.getElementById('weekly-ring-sub');
-  if(doneEl)doneEl.textContent=doneThisWeek;if(goalEl)goalEl.textContent=goal;
-  if(subEl){const rem=Math.max(0,goal-doneThisWeek);subEl.textContent=doneThisWeek>=goal?'🎯 Goal complete!':`${rem} more to hit your goal`;}
+  if(doneEl)doneEl.textContent=liftDone;if(goalEl)goalEl.textContent=liftGoal;
+  if(subEl){const rem=Math.max(0,liftGoal-liftDone);subEl.textContent=liftDone>=liftGoal?'🎯 Done!':`${rem} to go`;}
+  // Cardio ring
+  const cardioArc=document.getElementById('weekly-cardio-ring-arc');
+  if(cardioArc){const circ=2*Math.PI*32;const pct=cardioGoal>0?Math.min(1,cardioDone/cardioGoal):0;cardioArc.style.strokeDashoffset=circ*(1-pct);}
+  const cardioDoneEl=document.getElementById('weekly-cardio-done-count');const cardioGoalEl=document.getElementById('weekly-cardio-goal-count');const cardioSubEl=document.getElementById('weekly-cardio-ring-sub');
+  if(cardioDoneEl)cardioDoneEl.textContent=cardioDone;if(cardioGoalEl)cardioGoalEl.textContent=cardioGoal;
+  if(cardioSubEl){const rem=Math.max(0,cardioGoal-cardioDone);cardioSubEl.textContent=cardioGoal===0?'—':cardioDone>=cardioGoal?'🎯 Done!':`${rem} to go`;}
+  // Days row — show lift/cardio/both per day
   const daysEl=document.getElementById('weekly-days-row');
   if(daysEl){
     const labels=['S','M','T','W','T','F','S'];const todayDay=today.getDay();
     daysEl.innerHTML=labels.map((l,i)=>{
-      const done=doneDayNums.has(i);const isToday=i===todayDay;const hit=done&&doneThisWeek>=goal;
-      const cls=hit?'weekly-day-pip hit':done?'weekly-day-pip done':isToday?'weekly-day-pip today':'weekly-day-pip';
-      return `<div class="${cls}">${done?'✓':l}</div>`;
+      const hasLift=doneLiftDays.has(i);const hasCardio=doneCardioDays.has(i);const isToday=i===todayDay;
+      let cls='weekly-day-pip';let content=l;
+      if(hasLift&&hasCardio){cls+=' both';content='✓';}
+      else if(hasLift){cls+=' done';content='✓';}
+      else if(hasCardio){cls+=' cardio';content='✓';}
+      else if(isToday){cls+=' today';}
+      return `<div class="${cls}">${content}</div>`;
     }).join('');
   }
 }
@@ -3969,6 +4020,7 @@ function buildDurationPicker(currentStr){
 function renderEditLogBody(log){
   const body=document.getElementById('edit-log-body');
   body.innerHTML='';
+  const isCardio=log.type==='cardio';
 
   // Workout name
   const nameLabel=document.createElement('div');nameLabel.className='edit-log-section-label';nameLabel.textContent='WORKOUT NAME';body.appendChild(nameLabel);
@@ -3976,22 +4028,63 @@ function renderEditLogBody(log){
 
   // Duration
   const durLabel=document.createElement('div');durLabel.className='edit-log-section-label';durLabel.textContent='DURATION';body.appendChild(durLabel);
-  body.appendChild(buildDurationPicker(log.duration||''));
+  const dp=buildDurationPicker(log.duration||'');
+  if(isCardio){// Re-calc calories whenever duration changes
+    dp.addEventListener('pointerup',()=>setTimeout(updateCardioCalEdit,50));
+    dp.addEventListener('wheel',()=>setTimeout(updateCardioCalEdit,50),{passive:true});
+  }
+  body.appendChild(dp);
 
-  // Exercises
-  const exLabel=document.createElement('div');exLabel.className='edit-log-section-label';exLabel.textContent='EXERCISES';body.appendChild(exLabel);
-
-  const exContainer=document.createElement('div');exContainer.id='edit-log-ex-container';body.appendChild(exContainer);
-  _editLogExercises.forEach((_,i)=>renderEditLogExCard(i,exContainer));
-
-  // Add exercise button
-  const addEx=document.createElement('button');addEx.className='edit-log-add-ex';addEx.textContent='+ ADD EXERCISE';
-  addEx.onclick=()=>{_editLogExercises.push({name:'',sets:[{weight:'',reps:0}]});renderEditLogExCard(_editLogExercises.length-1,exContainer);};
-  body.appendChild(addEx);
+  if(isCardio){
+    // Intensity selector
+    const intLabel=document.createElement('div');intLabel.className='edit-log-section-label';intLabel.textContent='INTENSITY';body.appendChild(intLabel);
+    const intSel=document.createElement('select');intSel.id='edit-cardio-intensity';intSel.className='edit-log-field';intSel.style.cssText='cursor:pointer;text-transform:uppercase;font-family:"Orbitron",monospace;font-size:12px;letter-spacing:1px;';
+    ['low','medium','high'].forEach(lvl=>{const opt=document.createElement('option');opt.value=lvl;opt.textContent=lvl.toUpperCase();if(lvl===(log.intensity||'medium'))opt.selected=true;intSel.appendChild(opt);});
+    intSel.oninput=updateCardioCalEdit;
+    body.appendChild(intSel);
+    // Calories
+    const calLabel=document.createElement('div');calLabel.className='edit-log-section-label';calLabel.textContent='CALORIES BURNED';body.appendChild(calLabel);
+    const calWrap=document.createElement('div');calWrap.style.cssText='display:flex;gap:8px;align-items:center;';
+    const calInput=document.createElement('input');calInput.type='number';calInput.inputMode='numeric';calInput.id='edit-cardio-cal';calInput.className='edit-log-field';calInput.style.marginBottom='0';calInput.value=log.calories||0;calInput.placeholder='0';
+    const recalcBtn=document.createElement('button');recalcBtn.textContent='↻ RECALC';recalcBtn.style.cssText='background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:8px 10px;color:var(--accent);font-family:"Orbitron",monospace;font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;flex-shrink:0;';
+    recalcBtn.onclick=updateCardioCalEdit;
+    calWrap.appendChild(calInput);calWrap.appendChild(recalcBtn);body.appendChild(calWrap);
+    const calHint=document.createElement('div');calHint.id='edit-cardio-cal-hint';calHint.style.cssText='font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:0.5px;';body.appendChild(calHint);
+    // Notes
+    const notesLabel=document.createElement('div');notesLabel.className='edit-log-section-label';notesLabel.textContent='NOTES';body.appendChild(notesLabel);
+    const notesInput=document.createElement('textarea');notesInput.id='edit-cardio-notes';notesInput.className='edit-log-field';notesInput.placeholder='Optional notes...';notesInput.value=log.notes||'';notesInput.rows=3;notesInput.style.cssText='resize:none;font-family:"Exo 2",sans-serif;font-size:13px;line-height:1.5;';body.appendChild(notesInput);
+    setTimeout(updateCardioCalEdit,50);
+  } else {
+    // Exercises (weight workouts only)
+    const exLabel=document.createElement('div');exLabel.className='edit-log-section-label';exLabel.textContent='EXERCISES';body.appendChild(exLabel);
+    const exContainer=document.createElement('div');exContainer.id='edit-log-ex-container';body.appendChild(exContainer);
+    _editLogExercises.forEach((_,i)=>renderEditLogExCard(i,exContainer));
+    const addEx=document.createElement('button');addEx.className='edit-log-add-ex';addEx.textContent='+ ADD EXERCISE';
+    addEx.onclick=()=>{_editLogExercises.push({name:'',sets:[{weight:'',reps:0}]});renderEditLogExCard(_editLogExercises.length-1,exContainer);};
+    body.appendChild(addEx);
+  }
 
   // Save / Cancel
   const saveBtn=document.createElement('button');saveBtn.className='edit-log-save';saveBtn.textContent='SAVE CHANGES';saveBtn.onclick=saveEditLog;body.appendChild(saveBtn);
   const cancelBtn=document.createElement('button');cancelBtn.className='edit-log-cancel';cancelBtn.textContent='CANCEL';cancelBtn.onclick=closeEditLog;body.appendChild(cancelBtn);
+}
+
+function updateCardioCalEdit(){
+  const logs=getWorkoutLogs(_editLogDs);
+  const log=logs[_editLogIdx];if(!log)return;
+  const met=log.met||(getAllCardioTypes().find(c=>c.key===log.cardioKey)?.met)||7;
+  const intensity=document.getElementById('edit-cardio-intensity')?.value||log.intensity||'medium';
+  const mult=CARDIO_INTENSITY_MULT[intensity]||1.0;
+  const wLogs=getWeightLogs();const wEntry=wLogs.find(e=>e.date===_editLogDs);
+  const weightLbs=wEntry?wEntry.weight:(settings.weight||180);
+  const weightKg=weightLbs*0.453592;
+  const durStr=readDurationPicker()||log.duration||'';
+  const parsed=parseDurationStr(durStr);
+  const totalHours=(parsed.h*3600+parsed.m*60+parsed.s)/3600;
+  const cals=Math.round(met*mult*weightKg*totalHours);
+  const calInput=document.getElementById('edit-cardio-cal');if(calInput&&cals>0)calInput.value=cals;
+  const hint=document.getElementById('edit-cardio-cal-hint');
+  if(hint)hint.textContent=`MET ${met} × ${intensity} × ${weightLbs}lbs = ${cals} cal`;
 }
 
 function renderEditLogExCard(exIdx,container){
@@ -4079,39 +4172,43 @@ function saveEditLog(){
   log.workout=document.getElementById('edit-log-name').value.trim()||log.workout;
   log.duration=readDurationPicker()||log.duration;
 
-  // Rebuild exercises from _editLogExercises
-  const newExercises=_editLogExercises.filter(ex=>ex.name.trim()).map(ex=>{
-    const sets=ex.sets.length;
-    // Use last set's weight/reps as the "representative" values for summary
-    // but store per-set data too for richer info
-    const weights=ex.sets.map(s=>parseFloat(s.weight)||0);
-    const repsList=ex.sets.map(s=>parseInt(s.reps)||0);
-    const avgWeight=weights.reduce((a,b)=>a+b,0)/sets||0;
-    const avgReps=Math.round(repsList.reduce((a,b)=>a+b,0)/sets)||0;
-    return{
-      name:ex.name.trim(),
-      weight:avgWeight||null,
-      reps:avgReps,
-      sets,
-      setData:ex.sets.map(s=>({weight:parseFloat(s.weight)||null,reps:parseInt(s.reps)||0}))
-    };
-  });
-
-  // Recalculate volume and totals
-  let totalVol=0,totalSets=0;
-  newExercises.forEach(ex=>{
-    if(ex.setData){
-      ex.setData.forEach(s=>{totalVol+=(s.weight||0)*(s.reps||0);});
-    }else{
-      totalVol+=(ex.weight||0)*(ex.reps||0)*(ex.sets||0);
-    }
-    totalSets+=ex.sets;
-  });
-
-  log.exercises=newExercises;
-  log.exerciseCount=newExercises.length;
-  log.setsCompleted=totalSets;
-  log.volume=totalVol;
+  if(log.type==='cardio'){
+    // Cardio: update intensity, calories, notes
+    const intensityEl=document.getElementById('edit-cardio-intensity');
+    if(intensityEl)log.intensity=intensityEl.value;
+    const calEl=document.getElementById('edit-cardio-cal');
+    if(calEl)log.calories=parseInt(calEl.value)||log.calories;
+    const notesEl=document.getElementById('edit-cardio-notes');
+    if(notesEl)log.notes=notesEl.value.trim();
+    // Update nutrition burned cal for this date
+    if(log.calories>0){const nd=getNutritionLog(_editLogDs);nd.burned=log.calories;saveNutritionLog(_editLogDs,nd);}
+  } else {
+    // Rebuild exercises from _editLogExercises
+    const newExercises=_editLogExercises.filter(ex=>ex.name.trim()).map(ex=>{
+      const sets=ex.sets.length;
+      const weights=ex.sets.map(s=>parseFloat(s.weight)||0);
+      const repsList=ex.sets.map(s=>parseInt(s.reps)||0);
+      const avgWeight=weights.reduce((a,b)=>a+b,0)/sets||0;
+      const avgReps=Math.round(repsList.reduce((a,b)=>a+b,0)/sets)||0;
+      return{
+        name:ex.name.trim(),
+        weight:avgWeight||null,
+        reps:avgReps,
+        sets,
+        setData:ex.sets.map(s=>({weight:parseFloat(s.weight)||null,reps:parseInt(s.reps)||0}))
+      };
+    });
+    let totalVol=0,totalSets=0;
+    newExercises.forEach(ex=>{
+      if(ex.setData){ex.setData.forEach(s=>{totalVol+=(s.weight||0)*(s.reps||0);});}
+      else{totalVol+=(ex.weight||0)*(ex.reps||0)*(ex.sets||0);}
+      totalSets+=ex.sets;
+    });
+    log.exercises=newExercises;
+    log.exerciseCount=newExercises.length;
+    log.setsCompleted=totalSets;
+    log.volume=totalVol;
+  }
   logs[_editLogIdx]=log;
   localStorage.setItem('nova_log_'+_editLogDs,JSON.stringify(logs));
 
