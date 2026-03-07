@@ -49,7 +49,6 @@
 .cardio-card-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--text,#fff);letter-spacing:1px;}
 .cardio-card-sub{font-size:10px;color:var(--muted,rgba(255,255,255,0.4));letter-spacing:1.5px;margin-top:3px;font-family:'Orbitron',monospace;}
 .cardio-card-arrow{font-size:20px;color:var(--muted,rgba(255,255,255,0.3));flex-shrink:0;}
-.cardio-card-del{position:absolute;top:8px;right:8px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);border-radius:6px;padding:2px 7px;color:#f87171;font-size:11px;cursor:pointer;line-height:1.4;}
 
 /* ── CARDIO SESSION SCREEN ── */
 .cardio-timer-wrap{text-align:center;padding:28px 0 22px;background:rgba(167,139,250,0.04);border:1px solid rgba(167,139,250,0.12);border-radius:18px;margin-bottom:16px;}
@@ -877,11 +876,11 @@
     <div class="confirm-sub" style="margin-bottom:14px;">Add your own cardio type</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <input type="text" id="cardio-custom-emoji" placeholder="🏃" maxlength="2"
-        style="width:52px;background:var(--bg);border:1px solid var(--border);border-radius:10px;
-        padding:10px;color:var(--text);font-size:20px;text-align:center;outline:none;">
+        style="width:44px;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+        padding:7px;color:var(--text);font-size:17px;text-align:center;outline:none;flex-shrink:0;">
       <input type="text" id="cardio-custom-name" placeholder="ACTIVITY NAME..." maxlength="24"
-        style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;
-        padding:10px 12px;color:var(--text);font-family:'Orbitron',monospace;font-size:12px;font-weight:700;
+        style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+        padding:7px 10px;color:var(--text);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
         letter-spacing:1px;outline:none;text-transform:uppercase;">
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
@@ -895,7 +894,7 @@
     </div>
     <div class="confirm-btns">
       <button class="confirm-stay" onclick="closeAddCustomCardio()">CANCEL</button>
-      <button class="confirm-leave" style="background:rgba(167,139,250,0.15);border-color:var(--accent);color:var(--accent);" onclick="saveCustomCardioType()">ADD</button>
+      <button class="confirm-leave" style="background:rgba(167,139,250,0.28);border:1.5px solid var(--accent);color:var(--accent);" onclick="saveCustomCardioType()">ADD</button>
     </div>
   </div>
 </div>
@@ -1304,18 +1303,38 @@ function renderCardioCards(){
   const all=getAllCardioTypes();
   const list=document.getElementById('cardio-cards-list');
   if(!list)return;
-  list.innerHTML=all.map(c=>{
+  list.innerHTML='';
+  all.forEach(c=>{
     const isCustom=!CARDIO_TYPES.find(b=>b.key===c.key);
-    return`<div class="cardio-card" onclick="openCardioWorkout('${c.key}')">
-      <div class="cardio-card-icon">${c.icon}</div>
-      <div class="cardio-card-info">
-        <div class="cardio-card-name">${c.name}</div>
-        <div class="cardio-card-sub">MET ${c.met} · TAP TO START</div>
-      </div>
-      <div class="cardio-card-arrow">›</div>
-      ${isCustom?`<button class="cardio-card-del" onclick="event.stopPropagation();deleteCustomCardio('${c.key}')">✕</button>`:''}
-    </div>`;
-  }).join('');
+    if(isCustom){list.appendChild(buildCardioSwipeCard(c));}
+    else{
+      const card=document.createElement('div');card.className='cardio-card';
+      card.innerHTML=`<div class="cardio-card-icon">${c.icon}</div><div class="cardio-card-info"><div class="cardio-card-name">${c.name}</div><div class="cardio-card-sub">MET ${c.met} · TAP TO START</div></div><div class="cardio-card-arrow">›</div>`;
+      card.addEventListener('click',()=>openCardioWorkout(c.key));
+      list.appendChild(card);
+    }
+  });
+}
+function buildCardioSwipeCard(c){
+  const REVEAL_W=80;
+  const wrapper=document.createElement('div');wrapper.style.cssText='position:relative;border-radius:16px;overflow:hidden;';
+  const reveal=document.createElement('div');reveal.className='ex-delete-reveal';
+  reveal.innerHTML='🗑<br><span style="font-size:10px;letter-spacing:1px;">DELETE</span>';
+  wrapper.appendChild(reveal);
+  const card=document.createElement('div');card.className='cardio-card';
+  card.style.cssText='transform:translateX(0);transition:transform 0.25s ease;position:relative;z-index:2;margin-bottom:0;';
+  card.innerHTML=`<div class="cardio-card-icon">${c.icon}</div><div class="cardio-card-info"><div class="cardio-card-name">${c.name}</div><div class="cardio-card-sub">MET ${c.met} · TAP TO START</div></div><div class="cardio-card-arrow">›</div>`;
+  wrapper.appendChild(card);
+  let startX=0,deltaX=0,dragging=false,revealed=false;
+  const snapOpen=()=>{card.style.transition='transform 0.25s ease';card.style.transform=`translateX(-${REVEAL_W}px)`;revealed=true;};
+  const snapClose=()=>{card.style.transition='transform 0.25s ease';card.style.transform='translateX(0)';revealed=false;};
+  const doDelete=()=>{card.style.transition='transform 0.2s ease';card.style.transform='translateX(-100%)';setTimeout(()=>{saveCustomCardio(loadCustomCardio().filter(cc=>cc.key!==c.key));wrapper.remove();},200);};
+  reveal.addEventListener('click',doDelete);
+  card.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;deltaX=0;dragging=true;},{passive:true});
+  card.addEventListener('touchmove',e=>{if(!dragging)return;deltaX=e.touches[0].clientX-startX;const base=revealed?-REVEAL_W:0;const next=Math.min(0,Math.max(base+deltaX,-REVEAL_W*3));card.style.transition='none';card.style.transform=`translateX(${next}px)`;},{passive:true});
+  card.addEventListener('touchend',()=>{dragging=false;const base=revealed?-REVEAL_W:0;const pos=base+deltaX;if(pos<-REVEAL_W*2.8){doDelete();}else if(pos<-REVEAL_W*0.6){snapOpen();}else{snapClose();}deltaX=0;});
+  card.addEventListener('click',()=>{if(revealed){snapClose();}else{openCardioWorkout(c.key);}});
+  return wrapper;
 }
 
 // ── OPEN CARDIO WORKOUT ──
@@ -1325,7 +1344,7 @@ function openCardioWorkout(key){
   haptic('heavy');
   closePicker();
   cardioKey=key;cardioIntensity='medium';cardioCalOverride=null;
-  window._workoutDate=new Date().toISOString().split('T')[0];
+  window._workoutDate=getTodayDs();
   window._isCardioSession=true;
   const dl=document.getElementById('cardio-date-label');if(dl)dl.textContent='TODAY';
   document.getElementById('cardio-ws-title').textContent=ct.icon+' '+ct.name;
@@ -2014,7 +2033,7 @@ function openWorkout(key){
   closePicker();
   currentKey=key;swapIdx={};setsDone={};expanded={};
   // Reset workout date to today
-  window._workoutDate=new Date().toISOString().split('T')[0];
+  window._workoutDate=getTodayDs();
   const dl=document.getElementById('ws-date-label');
   if(dl)dl.textContent='TODAY';
   sessionExercises[key]=[];
