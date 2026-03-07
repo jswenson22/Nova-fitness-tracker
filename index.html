@@ -880,7 +880,7 @@
         padding:7px;color:var(--text);font-size:17px;text-align:center;outline:none;flex-shrink:0;">
       <input type="text" id="cardio-custom-name" placeholder="ACTIVITY NAME..." maxlength="24"
         style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;
-        padding:7px 10px;color:var(--text);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+        padding:5px 8px;color:var(--text);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;
         letter-spacing:1px;outline:none;text-transform:uppercase;">
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
@@ -894,7 +894,7 @@
     </div>
     <div class="confirm-btns">
       <button class="confirm-stay" onclick="closeAddCustomCardio()">CANCEL</button>
-      <button class="confirm-leave" style="background:rgba(167,139,250,0.28);border:1.5px solid var(--accent);color:var(--accent);" onclick="saveCustomCardioType()">ADD</button>
+      <button class="confirm-leave" style="background:rgba(167,139,250,0.15);border:1.5px solid var(--accent);color:var(--accent);" onclick="saveCustomCardioType()">ADD</button>
     </div>
   </div>
 </div>
@@ -1316,12 +1316,12 @@ function renderCardioCards(){
   });
 }
 function buildCardioSwipeCard(c){
-  const REVEAL_W=80;
-  const wrapper=document.createElement('div');wrapper.style.cssText='position:relative;border-radius:16px;overflow:hidden;';
+  const REVEAL_W=90;
+  const wrapper=document.createElement('div');wrapper.className='ex-swipe-wrapper';
   const reveal=document.createElement('div');reveal.className='ex-delete-reveal';
   reveal.innerHTML='🗑<br><span style="font-size:10px;letter-spacing:1px;">DELETE</span>';
   wrapper.appendChild(reveal);
-  const card=document.createElement('div');card.className='cardio-card';
+  const card=document.createElement('div');card.className='cardio-card ex-card-slide';
   card.style.cssText='transform:translateX(0);transition:transform 0.25s ease;position:relative;z-index:2;margin-bottom:0;';
   card.innerHTML=`<div class="cardio-card-icon">${c.icon}</div><div class="cardio-card-info"><div class="cardio-card-name">${c.name}</div><div class="cardio-card-sub">MET ${c.met} · TAP TO START</div></div><div class="cardio-card-arrow">›</div>`;
   wrapper.appendChild(card);
@@ -2404,7 +2404,7 @@ function resumeWorkout(){
 function saveAndGoHome(){
   haptic('success');
   if(window._pendingLog){
-    const ds=window._workoutDate||new Date().toISOString().split('T')[0];
+    const ds=window._workoutDate||getTodayDs();
     const existing=getWorkoutLogs(ds);existing.push(window._pendingLog);
     localStorage.setItem('nova_log_'+ds,JSON.stringify(existing));
     ['bench','squat','deadlift'].forEach(big3Key=>{
