@@ -3232,16 +3232,20 @@ function loadCustomExercises(){['leg','back','chest'].forEach(key=>{const saved=
 
 function exportCSV(){
   if(typeof XLSX !== 'undefined'){exportXLSX();return;}
-  const rows=[['Date','Workout','Duration','Exercise','Set','Weight (lbs)','Reps']];
+  const rows=[['Date','Type','Workout','Duration','Exercise','Set','Weight (lbs)','Reps','Calories Burned','Distance (mi)','Intensity','Notes']];
   const keys=[];
   for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('nova_log_'))keys.push(k);}
   if(!keys.length){alert('No workout data to export yet!');return;}
   keys.sort().forEach(k=>{
     const ds=k.replace('nova_log_','');
     getWorkoutLogs(ds).forEach(log=>{
-      const exList=log.exercises||[];
-      if(!exList.length)rows.push([ds,log.workout,log.duration,'—','—','—','—']);
-      else exList.forEach(ex=>{for(let s=1;s<=(ex.sets||1);s++)rows.push([ds,log.workout,log.duration,ex.name,s,ex.weight||'',ex.reps||'']);});
+      if(log.type==='cardio'){
+        rows.push([ds,'Cardio',log.workout,log.duration,'','','','',log.calories||'',log.distanceMi||'',log.intensity||'',log.notes||'']);
+      } else {
+        const exList=log.exercises||[];
+        if(!exList.length)rows.push([ds,'Lifting',log.workout,log.duration,'—','—','—','—','','','','']);
+        else exList.forEach(ex=>{for(let s=1;s<=(ex.sets||1);s++)rows.push([ds,'Lifting',log.workout,log.duration,ex.name,s,ex.weight||'',ex.reps||'','','','','']);});
+      }
     });
   });
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -3253,49 +3257,73 @@ function exportCSV(){
 
 function exportXLSX(){
   const wb=XLSX.utils.book_new();
-  const wRows=[['Date','Workout','Duration','Exercise','Set','Weight (lbs)','Reps']];
+  // ── Workouts sheet ──
+  const wRows=[['Date','Type','Workout','Duration','Exercise','Set','Weight (lbs)','Reps','Calories Burned','Distance (mi)','Intensity','Notes']];
   const keys=[];
   for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('nova_log_'))keys.push(k);}
   keys.sort().forEach(k=>{
     const ds=k.replace('nova_log_','');
     getWorkoutLogs(ds).forEach(log=>{
-      const exList=log.exercises||[];
-      if(!exList.length)wRows.push([ds,log.workout,log.duration,'—','—','—','—']);
-      else exList.forEach(ex=>{for(let s=1;s<=(ex.sets||1);s++)wRows.push([ds,log.workout,log.duration,ex.name,s,ex.weight||'',ex.reps||'']);});
+      if(log.type==='cardio'){
+        wRows.push([ds,'Cardio',log.workout,log.duration,'','','','',log.calories||'',log.distanceMi||'',log.intensity||'',log.notes||'']);
+      } else {
+        const exList=log.exercises||[];
+        if(!exList.length)wRows.push([ds,'Lifting',log.workout,log.duration,'—','—','—','—','','','','']);
+        else exList.forEach(ex=>{for(let s=1;s<=(ex.sets||1);s++)wRows.push([ds,'Lifting',log.workout,log.duration,ex.name,s,ex.weight||'',ex.reps||'','','','','']);});
+      }
     });
   });
-  const ws1=XLSX.utils.aoa_to_sheet(wRows);ws1['!cols']=[{wch:12},{wch:16},{wch:12},{wch:24},{wch:6},{wch:13},{wch:8}];
+  const ws1=XLSX.utils.aoa_to_sheet(wRows);ws1['!cols']=[{wch:12},{wch:8},{wch:18},{wch:12},{wch:24},{wch:6},{wch:13},{wch:8},{wch:15},{wch:14},{wch:12},{wch:20}];
   XLSX.utils.book_append_sheet(wb,ws1,'Workouts');
+  // ── Body Weight sheet ──
   const bwLogs=getWeightLogs().reverse();
   const bwRows=[['Date','Weight (lbs)'],...bwLogs.map(e=>[e.date,e.weight])];
   const ws2=XLSX.utils.aoa_to_sheet(bwRows);ws2['!cols']=[{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws2,'Body Weight');
+  // ── Max Lifts sheet (PRs + Estimated 1RM) ──
   const maxData=loadMaxLifts();const customLifts=loadCustomMaxLifts();
-  const allKeys=[...Object.keys(MAX_LIFT_META),...customLifts.map(l=>l.id)];
-  const prRows=[['Lift','Date','Weight (lbs)','Is PR']];
-  allKeys.forEach(k=>{
+  const allLiftKeys=[...Object.keys(MAX_LIFT_META),...customLifts.map(l=>l.id)];
+  const prRows=[['Lift','Date','Weight (lbs)','Is PR','Is Estimated 1RM']];
+  allLiftKeys.forEach(k=>{
     const name=MAX_LIFT_META[k]?MAX_LIFT_META[k].name:(customLifts.find(l=>l.id===k)?.name||k);
     const history=(maxData[k]||[]);const pr=history.length?history.reduce((b,e)=>e.weight>b.weight?e:b,history[0]):null;
-    history.forEach(e=>prRows.push([name,e.date,e.weight,pr&&e.weight===pr.weight&&e.date===pr.date?'Yes':'']));
+    history.forEach(e=>prRows.push([name,e.date,e.weight,pr&&e.weight===pr.weight&&e.date===pr.date?'Yes':'','']));
   });
-  const ws3=XLSX.utils.aoa_to_sheet(prRows);ws3['!cols']=[{wch:20},{wch:14},{wch:14},{wch:8}];
+  const estData=loadEst1RM();
+  ['bench','squat','deadlift'].forEach(bk=>{
+    const name=MAX_LIFT_META[bk]?MAX_LIFT_META[bk].name:bk;
+    (estData[bk]||[]).forEach(e=>prRows.push([name,e.date,e.est,'','Yes']));
+  });
+  const ws3=XLSX.utils.aoa_to_sheet(prRows);ws3['!cols']=[{wch:20},{wch:14},{wch:14},{wch:8},{wch:18}];
   XLSX.utils.book_append_sheet(wb,ws3,'Max Lifts');
-  // Nutrition sheet
-  const nutrRows=[['Date','Total Calories','Protein (g)','Carbs (g)','Fat (g)','Burned (kcal)','Net Calories']];
+  // ── Nutrition sheet (one row per meal) ──
+  const nutrRows=[['Date','Type','Meal','Calories','Protein (g)','Carbs (g)','Fat (g)']];
   const nutrKeys=[];
   for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('nova_nutrition_'))nutrKeys.push(k);}
   nutrKeys.sort().forEach(k=>{
     const ds=k.replace('nova_nutrition_','');
     const log=getNutritionLog(ds);
-    const cal=Math.round(log.meals.reduce((s,m)=>s+(m.calories||0),0));
-    const prot=Math.round(log.meals.reduce((s,m)=>s+(m.protein||0),0)*10)/10;
-    const carbs=Math.round(log.meals.reduce((s,m)=>s+(m.carbs||0),0)*10)/10;
-    const fat=Math.round(log.meals.reduce((s,m)=>s+(m.fat||0),0)*10)/10;
-    const burned=log.burned||0;
-    nutrRows.push([ds,cal,prot,carbs,fat,burned,cal-burned]);
+    log.meals.forEach(m=>{
+      nutrRows.push([ds,'Meal',m.name||'',Math.round(m.calories||0),Math.round((m.protein||0)*10)/10,Math.round((m.carbs||0)*10)/10,Math.round((m.fat||0)*10)/10]);
+    });
+    if(log.burned&&log.burned>0)nutrRows.push([ds,'BURNED','Calories Burned',log.burned,0,0,0]);
   });
-  const ws4=XLSX.utils.aoa_to_sheet(nutrRows);ws4['!cols']=[{wch:12},{wch:16},{wch:12},{wch:10},{wch:10},{wch:14},{wch:14}];
+  const ws4=XLSX.utils.aoa_to_sheet(nutrRows);ws4['!cols']=[{wch:12},{wch:8},{wch:28},{wch:12},{wch:12},{wch:10},{wch:10}];
   XLSX.utils.book_append_sheet(wb,ws4,'Nutrition');
+  // ── Saved Foods sheet ──
+  const savedFoodsList=getSavedFoods();
+  const sfRows=[['Name','Calories','Protein (g)','Carbs (g)','Fat (g)'],...savedFoodsList.map(f=>[f.name||'',Math.round(f.calories||0),Math.round((f.protein||0)*10)/10,Math.round((f.carbs||0)*10)/10,Math.round((f.fat||0)*10)/10])];
+  const ws5=XLSX.utils.aoa_to_sheet(sfRows);ws5['!cols']=[{wch:28},{wch:12},{wch:12},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,ws5,'Saved Foods');
+  // ── Saved Meals sheet ──
+  const templates=getMealTemplates();
+  const smRows=[['Meal Name','Emoji','Food Name','Calories','Protein (g)','Carbs (g)','Fat (g)']];
+  templates.forEach(t=>{
+    if(!t.foods||!t.foods.length){smRows.push([t.name||'',t.emoji||'🥗','','','','','']);}
+    else t.foods.forEach(f=>{smRows.push([t.name||'',t.emoji||'🥗',f.name||'',Math.round(f.calories||0),Math.round((f.protein||0)*10)/10,Math.round((f.carbs||0)*10)/10,Math.round((f.fat||0)*10)/10]);});
+  });
+  const ws6=XLSX.utils.aoa_to_sheet(smRows);ws6['!cols']=[{wch:20},{wch:8},{wch:28},{wch:12},{wch:12},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,ws6,'Saved Meals');
   XLSX.writeFile(wb,`nova-${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
@@ -4228,34 +4256,171 @@ function importLog(input){
   reader.onload=function(e){
     try{
       const wb=XLSX.read(e.target.result,{type:'array'});
-      const ws=wb.Sheets['Workouts'];
-      if(!ws){alert('Could not find a "Workouts" sheet. Make sure this is a NOVA export.');return;}
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
-      // Group rows into logs: key = date + workout name
-      const grouped={};
-      rows.forEach(row=>{
-        const date=row['Date']||'';const workout=row['Workout']||'';const duration=row['Duration']||'';
-        const exercise=row['Exercise']||'';const set=row['Set']||'';const weight=row['Weight (lbs)']||'';const reps=row['Reps']||'';
-        if(!date||!workout)return;
-        const gkey=date+'|||'+workout;
-        if(!grouped[gkey])grouped[gkey]={date,workout,duration,exerciseMap:{}};
-        if(exercise&&exercise!=='—'){
-          if(!grouped[gkey].exerciseMap[exercise])grouped[gkey].exerciseMap[exercise]={name:exercise,weight:parseFloat(weight)||null,reps:parseInt(reps)||0,sets:0};
-          grouped[gkey].exerciseMap[exercise].sets++;
-        }
-      });
-      let imported=0;
-      Object.values(grouped).forEach(g=>{
-        const exercises=Object.values(g.exerciseMap);
-        const totalVol=exercises.reduce((s,ex)=>s+(ex.weight||0)*(ex.reps||0)*(ex.sets||0),0);
-        const log={workout:g.workout,duration:g.duration,volume:totalVol,setsCompleted:exercises.reduce((s,ex)=>s+ex.sets,0),exerciseCount:exercises.length,exercises:exercises.map(ex=>({name:ex.name,weight:ex.weight,reps:ex.reps,sets:ex.sets}))};
-        const existing=getWorkoutLogs(g.date);
-        existing.push(log);
-        localStorage.setItem('nova_log_'+g.date,JSON.stringify(existing));
-        imported++;
-      });
+      let importedWorkouts=0,importedWeights=0,importedPRs=0,importedNutrDays=0,importedFoods=0,importedMeals=0;
+      let _idSeq=0;
+      function uid(){return Date.now().toString(36)+(++_idSeq).toString(36)+Math.random().toString(36).slice(2,4);}
+
+      // ── Workouts sheet ──
+      const wsW=wb.Sheets['Workouts'];
+      if(wsW){
+        const rows=XLSX.utils.sheet_to_json(wsW,{defval:''});
+        const grouped={};
+        rows.forEach(row=>{
+          const date=String(row['Date']||'').trim();
+          const type=String(row['Type']||'Lifting').trim();
+          const workout=String(row['Workout']||'').trim();
+          const duration=String(row['Duration']||'').trim();
+          if(!date||!workout)return;
+          const gkey=date+'|||'+workout;
+          if(!grouped[gkey])grouped[gkey]={date,type,workout,duration,exerciseMap:{},cardioData:null};
+          if(type==='Cardio'&&!grouped[gkey].cardioData){
+            grouped[gkey].cardioData={calories:parseFloat(row['Calories Burned'])||0,distanceMi:row['Distance (mi)']!==''?parseFloat(row['Distance (mi)'])||null:null,intensity:String(row['Intensity']||'moderate').trim().toLowerCase(),notes:String(row['Notes']||'').trim()};
+          }
+          const exercise=String(row['Exercise']||'').trim();
+          if(exercise&&exercise!=='—'&&type!=='Cardio'){
+            const wt=row['Weight (lbs)'];const reps=row['Reps'];
+            if(!grouped[gkey].exerciseMap[exercise])grouped[gkey].exerciseMap[exercise]={name:exercise,weight:wt!==''?parseFloat(wt)||null:null,reps:parseInt(reps)||0,sets:0};
+            grouped[gkey].exerciseMap[exercise].sets++;
+          }
+        });
+        Object.values(grouped).forEach(g=>{
+          let log;
+          if(g.type==='Cardio'&&g.cardioData){
+            log={type:'cardio',workout:g.workout,duration:g.duration,calories:g.cardioData.calories,distanceMi:g.cardioData.distanceMi,intensity:g.cardioData.intensity,notes:g.cardioData.notes,volume:0,setsCompleted:0,exerciseCount:0,exercises:[]};
+          } else {
+            const exercises=Object.values(g.exerciseMap);
+            const totalVol=exercises.reduce((s,ex)=>s+(ex.weight||0)*(ex.reps||0)*(ex.sets||0),0);
+            log={workout:g.workout,duration:g.duration,volume:totalVol,setsCompleted:exercises.reduce((s,ex)=>s+ex.sets,0),exerciseCount:exercises.length,exercises:exercises.map(ex=>({name:ex.name,weight:ex.weight,reps:ex.reps,sets:ex.sets}))};
+          }
+          const existing=getWorkoutLogs(g.date);
+          existing.push(log);
+          localStorage.setItem('nova_log_'+g.date,JSON.stringify(existing));
+          importedWorkouts++;
+        });
+      }
+
+      // ── Body Weight sheet ──
+      const wsBW=wb.Sheets['Body Weight'];
+      if(wsBW){
+        const bwRows=XLSX.utils.sheet_to_json(wsBW,{defval:''});
+        const existing=getWeightLogs();
+        const existingDates=new Set(existing.map(e=>e.date));
+        bwRows.forEach(row=>{
+          const date=String(row['Date']||'').trim();
+          const weight=parseFloat(row['Weight (lbs)']);
+          if(!date||!weight||existingDates.has(date))return;
+          existing.push({date,weight});
+          existingDates.add(date);
+          importedWeights++;
+        });
+        existing.sort((a,b)=>b.date.localeCompare(a.date));
+        localStorage.setItem('nova_weight_log',JSON.stringify(existing));
+      }
+
+      // ── Max Lifts sheet (PRs + Estimated 1RM) ──
+      const wsPR=wb.Sheets['Max Lifts'];
+      if(wsPR){
+        const prRows=XLSX.utils.sheet_to_json(wsPR,{defval:''});
+        const maxData=loadMaxLifts();
+        const estData=loadEst1RM();
+        const liftNameToKey={};
+        Object.keys(MAX_LIFT_META).forEach(k=>{liftNameToKey[MAX_LIFT_META[k].name]=k;});
+        loadCustomMaxLifts().forEach(l=>{liftNameToKey[l.name]=l.id;});
+        const big3ByName={};
+        ['bench','squat','deadlift'].forEach(bk=>{if(MAX_LIFT_META[bk])big3ByName[MAX_LIFT_META[bk].name]=bk;});
+        prRows.forEach(row=>{
+          const liftName=String(row['Lift']||'').trim();
+          const date=String(row['Date']||'').trim();
+          const weight=parseFloat(row['Weight (lbs)']);
+          const isEst=String(row['Is Estimated 1RM']||'').trim()==='Yes';
+          if(!liftName||!date||!weight)return;
+          if(isEst){
+            const bk=big3ByName[liftName];
+            if(bk){
+              if(!estData[bk])estData[bk]=[];
+              if(!estData[bk].find(e=>e.date===date)){estData[bk].push({date,est:weight});importedPRs++;}
+            }
+          } else {
+            const key=liftNameToKey[liftName];
+            if(!key)return;
+            if(!maxData[key])maxData[key]=[];
+            if(!maxData[key].find(e=>e.date===date&&e.weight===weight)){maxData[key].push({date,weight});importedPRs++;}
+          }
+        });
+        ['bench','squat','deadlift'].forEach(k=>{if(estData[k])estData[k].sort((a,b)=>a.date.localeCompare(b.date));});
+        Object.keys(maxData).forEach(k=>{maxData[k].sort((a,b)=>a.date.localeCompare(b.date));});
+        saveMaxLifts(maxData);
+        saveEst1RM(estData);
+      }
+
+      // ── Nutrition sheet (per-meal rows) ──
+      const wsN=wb.Sheets['Nutrition'];
+      if(wsN){
+        const nutrRows=XLSX.utils.sheet_to_json(wsN,{defval:''});
+        const dayLogs={};
+        nutrRows.forEach(row=>{
+          const date=String(row['Date']||'').trim();
+          const type=String(row['Type']||'Meal').trim();
+          if(!date)return;
+          if(!dayLogs[date])dayLogs[date]=getNutritionLog(date);
+          if(type==='BURNED'){
+            dayLogs[date].burned=parseFloat(row['Calories'])||0;
+          } else {
+            const mealName=String(row['Meal']||'').trim();
+            if(!mealName)return;
+            const cal=Math.round(parseFloat(row['Calories'])||0);
+            if(!dayLogs[date].meals.find(m=>m.name===mealName&&Math.round(m.calories||0)===cal)){
+              dayLogs[date].meals.push({id:uid(),name:mealName,calories:cal,protein:parseFloat(row['Protein (g)'])||0,carbs:parseFloat(row['Carbs (g)'])||0,fat:parseFloat(row['Fat (g)'])||0,servingG:100});
+            }
+          }
+        });
+        Object.entries(dayLogs).forEach(([ds,log])=>{saveNutritionLog(ds,log);importedNutrDays++;});
+      }
+
+      // ── Saved Foods sheet ──
+      const wsSF=wb.Sheets['Saved Foods'];
+      if(wsSF){
+        const sfRows=XLSX.utils.sheet_to_json(wsSF,{defval:''});
+        const existing=getSavedFoods();
+        const existingNames=new Set(existing.map(f=>f.name));
+        sfRows.forEach(row=>{
+          const name=String(row['Name']||'').trim();
+          if(!name||existingNames.has(name))return;
+          existing.push({id:uid(),name,calories:parseFloat(row['Calories'])||0,protein:parseFloat(row['Protein (g)'])||0,carbs:parseFloat(row['Carbs (g)'])||0,fat:parseFloat(row['Fat (g)'])||0,servingG:100});
+          existingNames.add(name);
+          importedFoods++;
+        });
+        saveSavedFoods(existing);
+      }
+
+      // ── Saved Meals sheet ──
+      const wsSM=wb.Sheets['Saved Meals'];
+      if(wsSM){
+        const smRows=XLSX.utils.sheet_to_json(wsSM,{defval:''});
+        const templates=getMealTemplates();
+        const existingNames=new Set(templates.map(t=>t.name));
+        const newTmpl={};
+        smRows.forEach(row=>{
+          const mealName=String(row['Meal Name']||'').trim();
+          const emoji=String(row['Emoji']||'🥗').trim();
+          const foodName=String(row['Food Name']||'').trim();
+          if(!mealName||existingNames.has(mealName))return;
+          if(!newTmpl[mealName])newTmpl[mealName]={id:uid(),name:mealName,emoji,foods:[]};
+          if(foodName)newTmpl[mealName].foods.push({name:foodName,calories:parseFloat(row['Calories'])||0,protein:parseFloat(row['Protein (g)'])||0,carbs:parseFloat(row['Carbs (g)'])||0,fat:parseFloat(row['Fat (g)'])||0,servingG:100});
+        });
+        Object.values(newTmpl).forEach(t=>{templates.push(t);importedMeals++;});
+        saveMealTemplates(templates);
+      }
+
       renderCalendar();renderProgressStats();renderWeeklyRing();updateHomeStats();
-      alert('Imported '+imported+' workout'+(imported===1?'':'s')+' successfully!');
+      const parts=[];
+      if(importedWorkouts)parts.push(importedWorkouts+' workout'+(importedWorkouts===1?'':'s'));
+      if(importedWeights)parts.push(importedWeights+' body weight log'+(importedWeights===1?'':'s'));
+      if(importedPRs)parts.push(importedPRs+' PR/1RM record'+(importedPRs===1?'':'s'));
+      if(importedNutrDays)parts.push(importedNutrDays+' nutrition day'+(importedNutrDays===1?'':'s'));
+      if(importedFoods)parts.push(importedFoods+' saved food'+(importedFoods===1?'':'s'));
+      if(importedMeals)parts.push(importedMeals+' saved meal'+(importedMeals===1?'':'s'));
+      alert(parts.length?'Imported: '+parts.join(', ')+'!':'No new data found (everything already exists).');
     }catch(err){alert('Failed to read file. Make sure this is a NOVA export (.xlsx). '+err.message);}
   };
   reader.readAsArrayBuffer(file);
