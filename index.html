@@ -1291,6 +1291,221 @@ let _searchDebounceTimer=null;
 const _searchCache=new Map();
 let _editFood=null;
 
+// ── ACTIVE WORKOUT PERSISTENCE ──
+// Persists in-progress workout to localStorage so the PWA can recover state
+// after iOS/Android unloads the page (e.g. after swiping out and returning).
+const ACTIVE_WORKOUT_KEY='nova_active_workout';
+const ACTIVE_WORKOUT_MAX_AGE_MS=24*60*60*1000;
+let _wkAutoSaveInterval=null;
+
+function persistActiveWorkout(){
+  if(!startTime)return;
+  try{
+    if(window._isCardioSession&&cardioKey){
+      const state={
+        type:'cardio',
+        cardioKey,
+        cardioIntensity,
+        cardioCalOverride,
+        startTime,
+        workoutDate:window._workoutDate||null,
+        distance:document.getElementById('cardio-distance-input')?.value||'',
+        notes:document.getElementById('cardio-notes-input')?.value||''
+      };
+      localStorage.setItem(ACTIVE_WORKOUT_KEY,JSON.stringify(state));
+    }else if(currentKey&&WORKOUTS[currentKey]){
+      const inputs={};
+      const allEx=[...getActiveExercises(currentKey),...(sessionExercises[currentKey]||[])];
+      allEx.forEach(ex=>{
+        const count=setsDone[ex.id]?.length||0;
+        const setW=[],setR=[];
+        for(let i=0;i<count;i++){
+          setW.push(document.getElementById(`setw-${ex.id}-${i}`)?.value||'');
+          setR.push(document.getElementById(`setr-${ex.id}-${i}`)?.value||'');
+        }
+        inputs[ex.id]={
+          topW:document.getElementById(`inp-w-${ex.id}`)?.value||'',
+          topR:document.getElementById(`inp-r-${ex.id}`)?.value||'',
+          setW,setR
+        };
+      });
+      const state={
+        type:'strength',
+        key:currentKey,
+        startTime,
+        workoutDate:window._workoutDate||null,
+        setsDone,
+        swapIdx,
+        expanded,
+        sessionExercises:sessionExercises[currentKey]||[],
+        deletedIds,
+        setReps:window._setReps||{},
+        setRIR:window._setRIR||{},
+        inputs
+      };
+      localStorage.setItem(ACTIVE_WORKOUT_KEY,JSON.stringify(state));
+    }
+  }catch(e){}
+}
+
+function clearActiveWorkout(){
+  stopWorkoutAutoSave();
+  try{localStorage.removeItem(ACTIVE_WORKOUT_KEY);}catch(e){}
+}
+
+function startWorkoutAutoSave(){
+  stopWorkoutAutoSave();
+  persistActiveWorkout();
+  _wkAutoSaveInterval=setInterval(persistActiveWorkout,2000);
+}
+
+function stopWorkoutAutoSave(){
+  if(_wkAutoSaveInterval){clearInterval(_wkAutoSaveInterval);_wkAutoSaveInterval=null;}
+}
+
+function _formatWorkoutDateLabel(ds){
+  if(!ds)return 'TODAY';
+  if(ds===getTodayDs())return 'TODAY';
+  const d=new Date(ds+'T00:00:00');
+  return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+}
+
+function restoreActiveWorkout(){
+  let state;
+  try{state=JSON.parse(localStorage.getItem(ACTIVE_WORKOUT_KEY)||'null');}catch(e){return;}
+  if(!state||!state.startTime)return;
+  if(Date.now()-state.startTime>ACTIVE_WORKOUT_MAX_AGE_MS){clearActiveWorkout();return;}
+
+  if(state.type==='cardio'){
+    const ct=getAllCardioTypes().find(c=>c.key===state.cardioKey);
+    if(!ct){clearActiveWorkout();return;}
+    cardioKey=state.cardioKey;
+    cardioIntensity=state.cardioIntensity||'medium';
+    cardioCalOverride=(state.cardioCalOverride==null)?null:state.cardioCalOverride;
+    window._workoutDate=state.workoutDate||getTodayDs();
+    window._isCardioSession=true;
+    startTime=state.startTime;
+    localStorage.setItem('nova_timer_start',startTime);
+    document.getElementById('cardio-ws-title').textContent=ct.icon+' '+ct.name;
+    const di=document.getElementById('cardio-distance-input');if(di)di.value=state.distance||'';
+    const ni=document.getElementById('cardio-notes-input');if(ni)ni.value=state.notes||'';
+    setCardioIntensityUI(cardioIntensity);
+    if(cardioCalOverride!==null){
+      document.getElementById('cardio-live-cal').textContent=cardioCalOverride;
+      document.getElementById('cardio-cal-override-badge').style.display='block';
+      document.getElementById('cardio-cal-tap-hint').style.display='none';
+    }else{
+      document.getElementById('cardio-cal-override-badge').style.display='none';
+      document.getElementById('cardio-cal-tap-hint').style.display='';
+    }
+    const cdl=document.getElementById('cardio-date-label');
+    if(cdl)cdl.textContent=_formatWorkoutDateLabel(window._workoutDate);
+    showScreen('cardio-screen');
+    document.getElementById('header-timer').style.display='flex';
+    if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+    timerInterval=setInterval(tickTimer,1000);tickTimer();
+    startCardioCalTimer();
+    startWorkoutAutoSave();
+    return;
+  }
+
+  if(state.type==='strength'){
+    const key=state.key;
+    if(!WORKOUTS[key]){
+      if(key&&key.startsWith('custom_')){
+        const cid=key.replace('custom_','');
+        const w=loadCustomWorkouts().find(cw=>cw.id===cid);
+        if(!w){clearActiveWorkout();return;}
+        WORKOUTS[key]={name:w.name,exercises:w.exercises.map((ex,j)=>({id:ex.id,priority:j+1,swaps:ex.swaps,sets:ex.sets,reps:ex.reps}))};
+      }else{clearActiveWorkout();return;}
+    }
+    if(['leg','back','chest'].includes(key)){
+      const overrides=loadDefaultOverrides();
+      if(overrides[key]){
+        WORKOUTS[key].exercises=overrides[key].map((ex,j)=>({...ex,priority:j+1,swaps:ex.swaps&&ex.swaps.length?ex.swaps:[ex.name]}));
+      }else{
+        WORKOUTS[key].exercises=ORIGINAL_DEFAULT_EXERCISES[key].map((ex,j)=>({...ex,priority:j+1}));
+      }
+    }
+    currentKey=key;
+    swapIdx=state.swapIdx||{};
+    setsDone=state.setsDone||{};
+    expanded=state.expanded||{};
+    sessionExercises[key]=state.sessionExercises||[];
+    deletedIds=state.deletedIds||[];
+    window._workoutDate=state.workoutDate||getTodayDs();
+    window._setReps=state.setReps||{};
+    window._setRIR=state.setRIR||{};
+    startTime=state.startTime;
+    localStorage.setItem('nova_timer_start',startTime);
+
+    document.getElementById('ws-title').textContent=WORKOUTS[key].name;
+    document.getElementById('btn-finish').style.display='flex';
+    document.getElementById('btn-finish-bottom').style.display='flex';
+    const dl=document.getElementById('ws-date-label');
+    if(dl)dl.textContent=_formatWorkoutDateLabel(window._workoutDate);
+    renderWorkoutVariantBar(key);
+    renderExercises(key);
+
+    // renderSetRows uses setTimeout(0), so defer input restoration
+    setTimeout(()=>{
+      const inputs=state.inputs||{};
+      const allEx=[...getActiveExercises(key),...(sessionExercises[key]||[])];
+      allEx.forEach(ex=>{
+        const inp=inputs[ex.id];
+        const si=swapIdx[ex.id]||0;
+        const name=ex.swaps[si]||ex.swaps[0];
+        const exNameEl=document.getElementById('exname-'+ex.id);if(exNameEl)exNameEl.textContent=name;
+        const swNameEl=document.getElementById('swname-'+ex.id);if(swNameEl)swNameEl.textContent=name;
+        if(inp){
+          const topW=document.getElementById('inp-w-'+ex.id);
+          const topR=document.getElementById('inp-r-'+ex.id);
+          if(topW&&inp.topW!=='')topW.value=inp.topW;
+          if(topR&&inp.topR!=='')topR.value=inp.topR;
+          (inp.setW||[]).forEach((v,i)=>{const el=document.getElementById(`setw-${ex.id}-${i}`);if(el&&v!=='')el.value=v;});
+          (inp.setR||[]).forEach((v,i)=>{const el=document.getElementById(`setr-${ex.id}-${i}`);if(el&&v!=='')el.value=v;});
+        }
+        if(expanded[ex.id]){
+          document.getElementById('exbody-'+ex.id)?.classList.add('open');
+          document.getElementById('expicon-'+ex.id)?.classList.add('open');
+        }
+        updateMeta(ex.id);
+      });
+      updateProgress();
+      applyGoalBarColor();
+    },30);
+
+    showScreen('workout-screen');
+    document.getElementById('header-timer').style.display='flex';
+    if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+    timerInterval=setInterval(tickTimer,1000);tickTimer();
+
+    // Resume rest timer if one was running
+    const restEnd=localStorage.getItem('nova_rest_end');
+    if(restEnd){
+      const remaining=Math.ceil((parseInt(restEnd)-Date.now())/1000);
+      if(remaining>0){
+        restTotal=parseInt(settings.rest)||90;
+        restRemaining=remaining;
+        document.getElementById('rest-timer-bar').style.display='block';
+        document.getElementById('rest-timer-spacer')&&(document.getElementById('rest-timer-spacer').style.display='block');
+        updateRestDisplay();
+        document.getElementById('rt-fill').style.transition='none';
+        document.getElementById('rt-fill').style.width=((restRemaining/restTotal)*100)+'%';
+        clearInterval(restInterval);
+        restInterval=setInterval(()=>{restRemaining--;updateRestDisplay();document.getElementById('rt-fill').style.width=((restRemaining/restTotal)*100)+'%';if(restRemaining<=0){haptic('warning');stopRest();}},1000);
+      } else {
+        localStorage.removeItem('nova_rest_end');
+      }
+    }
+
+    startWorkoutAutoSave();
+  }
+}
+
+window.addEventListener('pagehide',persistActiveWorkout);
+window.addEventListener('beforeunload',persistActiveWorkout);
+
 const GOAL_PRESETS={
   strength:{repsMulti:0.6,rest:180,bar:'linear-gradient(90deg,#a78bfa,#7c3aed)'},
   muscle:{repsMulti:1.0,rest:90,bar:'linear-gradient(90deg,#38bdf8,#0ea5e9)'},
@@ -1391,6 +1606,7 @@ function openCardioWorkout(key){
   if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
   timerInterval=setInterval(tickTimer,1000);tickTimer();
   startCardioCalTimer();
+  startWorkoutAutoSave();
 }
 
 // ── INTENSITY ──
@@ -1456,7 +1672,7 @@ function clearCardioCalOverride(){
 // ── CONFIRM BACK FROM CARDIO ──
 function confirmCardioBack(){
   const modal=document.getElementById('confirm-modal');
-  if(!modal){clearInterval(cardioCalInterval);stopTimer();stopRest();window._isCardioSession=false;window._pendingLog=null;switchTab('home');return;}
+  if(!modal){clearInterval(cardioCalInterval);stopTimer();stopRest();window._isCardioSession=false;window._pendingLog=null;clearActiveWorkout();switchTab('home');return;}
   modal.classList.add('active');
   // Temporarily override the LEAVE button for cardio
   const leaveBtn=modal.querySelector('.confirm-leave');
@@ -1469,6 +1685,7 @@ function confirmCardioBack(){
       stopTimer();stopRest();
       window._isCardioSession=false;
       window._pendingLog=null;
+      clearActiveWorkout();
       switchTab('home');
     };
   }
@@ -1616,6 +1833,7 @@ function init(){
   addSwipeToDismiss('food-detail-sheet',closeFoodDetail);
   addSwipeToCloseFullSheet('builder-sheet','builder-body',closeBuilder,false);
   setTimeout(()=>addSwipeToCloseFullSheet('meal-builder-sheet','meal-builder-body',closeMealTemplateBuilder,false),0);
+  restoreActiveWorkout();
 }
 
 function saveSetting(k,v){settings[k]=v;localStorage.setItem('nova_settings',JSON.stringify(settings));}
@@ -2093,6 +2311,7 @@ function openWorkout(key){
   localStorage.setItem('nova_timer_start',startTime);
   document.getElementById('header-timer').style.display='flex';
   timerInterval=setInterval(tickTimer,1000);tickTimer();
+  startWorkoutAutoSave();
 }
 
 function renderWorkoutVariantBar(key){
@@ -2119,7 +2338,7 @@ function showDeleteConfirm(title,sub,onConfirm){
 }
 function genericDeleteCancel(){document.getElementById('generic-delete-modal').classList.remove('active');}
 function confirmBack(){document.getElementById('confirm-modal').classList.add('active');}
-function confirmBackYes(){haptic('warning');document.getElementById('confirm-modal').classList.remove('active');stopTimer();stopRest();goBackFromWorkout();}
+function confirmBackYes(){haptic('warning');document.getElementById('confirm-modal').classList.remove('active');stopTimer();stopRest();clearActiveWorkout();goBackFromWorkout();}
 function confirmBackNo(){document.getElementById('confirm-modal').classList.remove('active');}
 function goBackFromWorkout(){showScreen(prevTab+'-screen');document.getElementById('tab-bar').style.display='';}
 
@@ -2276,11 +2495,12 @@ function updateProgress(){
 
 // ── TIMER ──
 function tickTimer(){if(!startTime)return;const s=Math.floor((Date.now()-startTime)/1000),m=Math.floor(s/60),h=Math.floor(m/60);const t=h>0?`${pad(h)}:${pad(m%60)}:${pad(s%60)}`:`${pad(m)}:${pad(s%60)}`;document.getElementById('header-timer').textContent=t;const cd=document.getElementById('cardio-timer-display');if(cd)cd.textContent=t;}
-function stopTimer(){clearInterval(timerInterval);timerInterval=null;document.getElementById('header-timer').style.display='none';const bfb=document.getElementById('btn-finish-bottom');if(bfb)bfb.style.display='none';localStorage.removeItem('nova_timer_start');}
+function stopTimer(){clearInterval(timerInterval);timerInterval=null;document.getElementById('header-timer').style.display='none';const bfb=document.getElementById('btn-finish-bottom');if(bfb)bfb.style.display='none';localStorage.removeItem('nova_timer_start');stopWorkoutAutoSave();}
 function pad(n){return String(n).padStart(2,'0');}
 function getElapsed(){if(!startTime)return{str:'—',ms:0};const ms=Date.now()-startTime,s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60);return{str:h>0?`${h}h ${m%60}m ${s%60}s`:`${m}m ${s%60}s`,ms};}
 
 document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){persistActiveWorkout();}
   if(document.visibilityState==='visible'&&startTime){
     const stored=localStorage.getItem('nova_timer_start');
     if(stored)startTime=parseInt(stored);
@@ -2451,10 +2671,11 @@ function saveAndGoHome(){
     window._pendingLog=null;
   }
   window._isCardioSession=false;
+  clearActiveWorkout();
   updateHomeStats();renderWeeklyRing();switchTab('home');
 }
 function confirmDeleteWorkout(){document.getElementById('delete-workout-modal').classList.add('active');}
-function deleteWorkoutAndGoHome(){document.getElementById('delete-workout-modal').classList.remove('active');window._pendingLog=null;window._isCardioSession=false;switchTab('home');}
+function deleteWorkoutAndGoHome(){document.getElementById('delete-workout-modal').classList.remove('active');window._pendingLog=null;window._isCardioSession=false;clearActiveWorkout();switchTab('home');}
 
 // ── NUTRITION SCREEN ──
 function getMonday(d){const dt=new Date(d);const day=dt.getDay();const diff=dt.getDate()-(day===0?6:day-1);return new Date(dt.setDate(diff));}
